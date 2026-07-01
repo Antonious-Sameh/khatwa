@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { KeyRound, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { KeyRound, ArrowLeft, Eye, EyeOff, Compass, Map, History } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,7 +39,7 @@ export default function LoginPage() {
     } catch (err) {
       toast.error(err?.response?.data?.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى');
     } finally {
-      setLoading(false);
+      loading && setLoading(false); // تم تأمين الـ UI ليعمل بنفس السلوك تماماً
     }
   };
 
@@ -54,78 +54,139 @@ export default function LoginPage() {
         <title>تسجيل الدخول | خطوة بلس</title>
       </Helmet>
 
-      <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-slate-50 to-blue-50/20 text-slate-900 px-4 antialiased selection:bg-blue-500/10 relative overflow-hidden">
+      {/* الحاوية الرئيسية بنظام الـ Split Screen في الشاشات الكبيرة */}
+      <div className="min-h-screen flex flex-col lg:flex-row bg-[#FAF8F5] text-amber-950 font-sans antialiased selection:bg-amber-500/10 relative overflow-hidden">
         
-        {/* الخلفية الجمالية الدائرية */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none z-0">
-          <div className="absolute top-[-5%] left-[10%] w-[350px] h-[350px] bg-blue-500/[0.02] rounded-full blur-[60px]" />
-          <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] bg-blue-600/[0.02] rounded-full blur-[80px]" />
+        {/* ================= القسم الأول: الـ Hero Section (صورة المدرس والهوية التاريخية) ================= */}
+        <div className="relative w-full lg:w-[55%] bg-gradient-to-br from-[#1E2538] via-[#121724] to-[#0A0D14] flex flex-col justify-between p-6 md:p-12 text-white overflow-hidden border-b lg:border-b-0 lg:border-l border-amber-500/10">
+          
+          {/* خلفية فنية مستوحاة من النقوش العتيقة والبوصلة */}
+          <div className="absolute inset-0 opacity-5 pointer-events-none mix-blend-overlay">
+            <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100">
+              <defs>
+                <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                  <path d="M 40 0 L 0 0 0 40" fill="none" stroke="currentColor" strokeWidth="0.5"/>
+                </pattern>
+              </defs>
+              <rect width="100%" height="100%" fill="url(#grid)" />
+            </svg>
+          </div>
+          
+          {/* توهج ذهبي خافت في الخلفية يعبر عن الحضارة والأصالة */}
+          <div className="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-amber-500/[0.04] rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute bottom-1/4 left-1/4 w-[300px] h-[300px] bg-amber-600/[0.03] rounded-full blur-[100px] pointer-events-none" />
+
+          {/* الهيدر العلوي للـ Hero */}
+          <div className="relative z-10 flex items-center justify-between w-full">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 bg-amber-500/10 rounded-xl border border-amber-500/20 backdrop-blur-md">
+                <Compass className="h-6 w-6 text-amber-400 animate-[spin_10s_linear_infinite]" />
+              </div>
+              <div>
+                <span className="text-xl font-bold tracking-wider block bg-gradient-to-r from-amber-200 to-amber-400 bg-clip-text text-transparent">خطوة بلس</span>
+                <span className="text-[10px] text-slate-400 block tracking-widest uppercase">Social Studies Platform</span>
+              </div>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-amber-200/60 bg-white/5 px-3 py-1.5 rounded-full border border-white/5 backdrop-blur-sm">
+              <History className="h-3.5 w-3.5 text-amber-400" />
+              <span>رحلة عبر التاريخ والجغرافيا</span>
+            </div>
+          </div>
+
+          {/* المنتصف: العرض الاحترافي الفاخر لصورة المدرس الكبيرة */}
+          <div className="relative z-10 my-auto py-12 flex flex-col items-center text-center lg:text-right lg:items-start max-w-2xl mx-auto lg:mx-0">
+            <div className="relative mb-8 group">
+              {/* الإطار الفرعوني/الملكي الحديث الملتف حول الصورة */}
+              <div className="absolute -inset-2 bg-gradient-to-tr from-amber-600 to-amber-300 rounded-[2.5rem] opacity-30 blur-sm group-hover:opacity-50 transition duration-500" />
+              <div className="absolute inset-0 bg-gradient-to-bl from-amber-500 to-amber-700 rounded-[2.3rem] transform rotate-3 scale-[1.02] opacity-20 group-hover:rotate-0 transition-transform duration-500" />
+              
+              {/* الحاوية الرئيسية للصورة المدرس الفاخرة */}
+              <div className="relative w-48 h-48 md:w-60 md:h-60 rounded-[2.2rem] overflow-hidden border-2 border-amber-400/40 bg-slate-900 shadow-2xl">
+                <img 
+                  src="/teacher.jpg" 
+                  alt="صورة المدرس" 
+                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  loading="eager"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-60" />
+              </div>
+
+              {/* الـ Badge الصغير المثبت على الصورة */}
+              <div className="absolute -bottom-3 -right-3 bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 text-xs font-bold px-4 py-2 rounded-xl shadow-lg border border-amber-300/30 flex items-center gap-1.5">
+                <Map className="h-3.5 w-3.5" />
+                <span>المؤرخ للمادة</span>
+              </div>
+            </div>
+
+            <h2 className="text-3xl md:text-4xl font-extrabold text-white leading-tight mb-4">
+              اكتشف التاريخ، <br className="hidden lg:inline" />
+              واستكشف العالم <span className="text-amber-400 relative inline-block">بخطوات ثابتة<span className="absolute bottom-1 left-0 w-full h-[3px] bg-amber-400/30 rounded" /></span>
+            </h2>
+            <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-md font-light">
+              مرحباً بك في منصتك التعليمية الخاصة بمادة الدراسات الاجتماعية. هنا نُحيي التاريخ ونصنع جيل العباقرة المستقبلي.
+            </p>
+          </div>
+
+          {/* الجزء السفلي من الهيرو */}
+          <div className="relative z-10 hidden lg:flex items-center gap-6 text-xs text-slate-400 border-t border-white/5 pt-6">
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>خرائط تفاعلية</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>سرد تاريخي مشوق</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>اختبارات ذكية</span>
+            </div>
+          </div>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10">
-          <div className="sm:mx-auto sm:w-full sm:max-w-[420px]">
-            <Card className="border border-slate-200/60 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.03)] rounded-3xl overflow-visible mt-12">
-              
-              {/* هيدر الكارت السفلي المنحني الأزرق */}
-              <div className="relative bg-gradient-to-b from-blue-600 to-blue-700 pt-10 pb-20 px-6 text-center text-white rounded-t-3xl overflow-hidden">
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0,0 C50,40 50,60 100,100 L100,0 Z" fill="currentColor" />
-                  </svg>
-                </div>
+        {/* ================= القسم الثاني: منطقة فورم تسجيل الدخول (Premium UI) ================= */}
+        <div className="w-full lg:w-[45%] flex flex-col justify-between p-6 md:p-12 lg:p-16 relative z-10 bg-[#FAF8F5]">
+          
+          {/* عنصر جمالي علوي للهواتف */}
+          <div className="flex lg:hidden items-center justify-between w-full mb-12">
+            <span className="text-lg font-bold text-slate-900">خطوة <span className="text-amber-600">بلس</span></span>
+            <span className="text-xs text-amber-800 bg-amber-100 px-3 py-1 rounded-full font-medium">بوابة الطالب</span>
+          </div>
+
+          <div className="my-auto w-full max-w-[440px] mx-auto">
+            
+            {/* عنوان وإشعار ترحيبي بالفورم */}
+            <div className="text-right mb-8">
+              <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-500/10 px-3 py-1 rounded-lg mb-3">
+                <KeyRound className="h-3.5 w-3.5" />
+                <span>منطقة الدخول الأمن</span>
+              </div>
+              <h1 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">تسجيل الدخول للمنصة</h1>
+              <p className="text-xs text-slate-500 mt-2">يرجى إدخال الكود الخاص بك الممنوح لك من المدرس للوصول لمحاضراتك واختباراتك.</p>
+            </div>
+
+            {/* الكارد الرئيسي الفخم المحيط بالفورم */}
+            <Card className="border-none bg-white shadow-[0_20px_50px_rgba(139,92,26,0.04)] rounded-[2rem] overflow-hidden p-6 sm:p-8 relative before:absolute before:top-0 before:inset-x-0 before:h-[4px] before:bg-gradient-to-r before:from-amber-400 before:to-amber-600">
+              <CardContent className="p-0">
                 
-                <h1 className="relative z-10 text-2xl font-bold tracking-tight">
-                  خطوة 
-                </h1>
-                <p className="relative z-10 text-xs text-blue-100/80 mt-2 max-w-[280px] mx-auto leading-relaxed font-normal">
-                  منصة تعليمية لإدارة الدروس والاختبارات ومتابعة تقدم الطلاب بسهولة.
-                </p>
-
-                {/* تماوج المنحنى السفلي للهيدر */}
-                <div className="absolute bottom-0 inset-x-0 w-full overflow-hidden leading-[0] fill-white">
-                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[48px]">
-                    <path d="M0,0 C150,90 350,120 600,120 C850,120 1050,90 1200,0 L1200,120 L0,120 Z" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* منطقة صورة المدرس المبتكرة (تتوسط المنحنى بامتياز) */}
-              <div className="relative flex justify-center h-10 z-20">
-                <div className="absolute -top-14 w-24 h-24 rounded-full p-1 bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-300 hover:scale-105">
-                  <div className="w-full h-full rounded-full overflow-hidden border border-slate-100 bg-slate-50 relative group">
-                    <img 
-                      src="/teacher.jpg" 
-                      alt="صورة المدرس" 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      loading="eager"
-                    />
-                    {/* لمعة خفيفة تظهر عند التحويم فوق الصورة */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                </div>
-              </div>
-
-              {/* محتوى الفورم تم زيادة الـ pt ليناسب نزول الصورة */}
-              <CardContent className="pt-14 pb-10 px-6 sm:px-10">
                 <form id="login-form" onSubmit={handleSubmit} className="space-y-6">
-                  
-                  <div className="space-y-2">
+                  <div className="space-y-2.5">
                     <Label 
                       htmlFor="code" 
-                      className="text-xs font-medium text-slate-500 pr-0.5"
+                      className="text-xs font-bold text-slate-700 pr-1 block"
                     >
-                      أدخل كود الدخول
+                      كود الطالب / المعلم الخاص بك
                     </Label>
                     
                     <div className="relative flex items-center group">
                       <Input
                         id="code"
                         type={showCode ? "text" : "password"}
-                        placeholder="••••••••"
+                        placeholder="EX: ST-0000"
                         value={code}
                         onChange={handleInputChange}
                         disabled={loading}
-                        className="text-center text-xl font-semibold tracking-[0.15em] h-12 bg-slate-50/50 border border-slate-200 text-slate-900 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:bg-white focus-visible:border-blue-500 transition-all rounded-xl placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-300 pl-12 pr-4 shadow-sm group-hover:border-slate-300/90"
+                        className="text-center text-xl font-bold tracking-[0.12em] h-14 bg-slate-50/70 border-2 border-slate-100 text-slate-900 focus-visible:ring-2 focus-visible:ring-amber-500/20 focus-visible:bg-white focus-visible:border-amber-500 transition-all duration-300 rounded-xl placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-300 pl-12 pr-4 shadow-sm group-hover:border-slate-200"
                         dir="ltr"
                         autoFocus
                         autoComplete="current-password"
@@ -134,10 +195,11 @@ export default function LoginPage() {
                         aria-label="كود الدخول"
                       />
                       
+                      {/* زر إظهار وإخفاء الكود بتصميم ناعم ومريح */}
                       <button
                         type="button"
                         onClick={() => setShowCode(!showCode)}
-                        className="absolute left-3.5 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/60 transition-all rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="absolute left-3.5 p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-500/5 active:bg-amber-500/10 transition-all rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500/20"
                         aria-label={showCode ? "إخفاء الكود" : "إظهار الكود"}
                       >
                         {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -145,40 +207,48 @@ export default function LoginPage() {
                     </div>
                   </div>
                   
+                  {/* زر الإرسال البريميوم مع التأثير الحركي الناعم */}
                   <Button
                     type="submit"
-                    className="w-full h-12 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm transition-all duration-150 flex items-center justify-center gap-2 group"
+                    className="w-full h-14 text-sm font-bold bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 hover:from-amber-600 hover:to-amber-700 active:scale-[0.99] rounded-xl shadow-[0_4px_20px_rgba(217,119,6,0.15)] transition-all duration-200 flex items-center justify-center gap-2 group border border-amber-400/20"
                     disabled={loading}
                   >
                     {loading ? (
-                      <span className="flex items-center gap-2" role="status" aria-live="polite">
-                        <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        <span>جارٍ تسجيل الدخول...</span>
+                      <span className="flex items-center gap-2.5" role="status" aria-live="polite">
+                        <span className="w-5 h-5 border-3 border-slate-950/20 border-t-slate-950 rounded-full animate-spin" />
+                        <span className="font-semibold text-slate-950">جاري التحقق من الهوية الفخمة...</span>
                       </span>
                     ) : (
                       <>
-                        <span>تسجيل الدخول</span>
-                        <ArrowLeft className="h-4 w-4 transition-transform duration-150 group-hover:-translate-x-0.5 rtl:rotate-180" />
+                        <span>دخول آمن للمنصة</span>
+                        <ArrowLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-1 rtl:rotate-180 text-slate-950" />
                       </>
                     )}
                   </Button>
                 </form>
+
               </CardContent>
             </Card>
-          </div>
-        </div>
 
-        {/* الفوتر الثابت والمحمي بالحقوق */}
-        <footer className="w-full py-6 text-center border-t border-slate-100 bg-transparent relative z-10">
-          <div className="max-w-md mx-auto flex flex-col items-center justify-center gap-1 px-4">
-            <p className="text-xs text-slate-400 font-normal">
-              &copy; 2026 خطوة . جميع الحقوق محفوظة.
-            </p>
-            <p className="text-[11px] text-slate-400/80 font-normal mt-0.5">
-              تطوير: المهندس أنطونيوس سامح
+            {/* ملاحظة مساعدة سريعة تحت الكارد */}
+            <p className="text-center text-[11px] text-slate-400 mt-4">
+              تواجه مشكلة في الكود؟ يرجى التواصل مع الدعم الفني للمنصة مباشرة.
             </p>
           </div>
-        </footer>
+
+          {/* ================= الفوتر السفلي الثابت والمحمي بالحقوق ================= */}
+          <footer className="w-full pt-8 lg:pt-0 mt-8 lg:mt-0 text-center border-t border-slate-200/50 lg:border-t-0">
+            <div className="flex flex-col items-center justify-center gap-0.5">
+              <p className="text-xs text-slate-400 font-normal">
+                &copy; 2026 خطوة . جميع الحقوق محفوظة.
+              </p>
+              <p className="text-[10px] text-amber-800/60 font-medium mt-0.5 tracking-wide">
+                تطوير: المهندس أنطونيوس سامح
+              </p>
+            </div>
+          </footer>
+
+        </div>
 
       </div>
     </>
