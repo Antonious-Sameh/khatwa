@@ -1,69 +1,85 @@
-import React from 'react';
-import { NavLink } from 'react-router-dom';
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from '@/components/ui/sheet';
-import { cn } from '@/lib/utils';
-import { useAuth } from '@/contexts/AuthContext.jsx';
-import { 
-  LayoutDashboard, FileText, Award, Trophy, Star, 
-  BarChart, Medal, UserCircle, CalendarDays, CreditCard,
-  KeyRound as UsersRound, GraduationCap, ClipboardCheck, Wallet,
-  StickyNote, MonitorPlay
-} from 'lucide-react';
+import React from "react";
+import { NavLink } from "react-router-dom";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext.jsx";
+import {
+  LayoutDashboard,
+  FileText,
+  Award,
+  Trophy,
+  Star,
+  BarChart,
+  Medal,
+  UserCircle,
+  CalendarDays,
+  CreditCard,
+  KeyRound as UsersRound,
+  GraduationCap,
+  ClipboardCheck,
+  Wallet,
+  StickyNote,
+  MonitorPlay,
+} from "lucide-react";
 
 const TEACHER_GROUPS = [
   {
-    id: 'group-1',
+    id: "group-1",
     items: [
-      { path: '/teacher/home', label: 'لوحة التحكم', icon: LayoutDashboard },
-      { path: '/groups', label: 'المجموعات', icon: UsersRound },
-      { path: '/students', label: 'الطلاب', icon: GraduationCap },
-      { path: '/attendance', label: 'الحضور', icon: ClipboardCheck },
-      { path: '/payments', label: 'الفلوس', icon: Wallet },
-    ]
+      { path: "/teacher/home", label: "لوحة التحكم", icon: LayoutDashboard },
+      { path: "/groups", label: "المجموعات", icon: UsersRound },
+      { path: "/students", label: "الطلاب", icon: GraduationCap },
+      { path: "/attendance", label: "الحضور", icon: ClipboardCheck },
+      { path: "/payments", label: "الفلوس", icon: Wallet },
+    ],
   },
   {
-    id: 'group-2',
+    id: "group-2",
     items: [
-      { path: '/teacher/exams', label: 'الامتحانات', icon: FileText },
-      { path: '/teacher/grades', label: 'الدرجات', icon: Award },
-      { path: '/teacher/rankings', label: 'ترتيب الطلاب', icon: Trophy },
-      { path: '/teacher/points', label: 'النقاط', icon: Star },
-    ]
+      { path: "/teacher/exams", label: "الامتحانات", icon: FileText },
+      { path: "/teacher/grades", label: "الدرجات", icon: Award },
+      { path: "/teacher/rankings", label: "ترتيب الطلاب", icon: Trophy },
+      { path: "/teacher/points", label: "النقاط", icon: Star },
+    ],
   },
   {
-    id: 'group-3',
+    id: "group-3",
     items: [
-      { path: '/teacher/online', label: 'أون لاين', icon: MonitorPlay },
-      { path: '/teacher/notes', label: 'الملاحظات', icon: StickyNote },
-      { path: '/teacher/reports', label: 'التقارير', icon: BarChart },
-      { path: '/teacher/heroes', label: 'أبطال مروا من هنا', icon: Medal },
-    ]
+      { path: "/teacher/online", label: "أون لاين", icon: MonitorPlay },
+      { path: "/teacher/notes", label: "الملاحظات", icon: StickyNote },
+      { path: "/teacher/reports", label: "التقارير", icon: BarChart },
+      { path: "/teacher/heroes", label: "أبطال مروا من هنا", icon: Medal },
+    ],
   },
   {
-    id: 'group-4',
-    items: [
-      { path: '/teacher/account', label: 'الحساب', icon: UserCircle }
-    ]
-  }
+    id: "group-4",
+    items: [{ path: "/teacher/account", label: "الحساب", icon: UserCircle }],
+  },
 ];
 
 const STUDENT_NAV = [
-  { path: '/student/home', label: 'الرئيسية', icon: LayoutDashboard },
-  { path: '/student/schedule', label: 'جدولي', icon: CalendarDays },
-  { path: '/student/attendance', label: 'حضورى', icon: ClipboardCheck },
-  { path: '/student/payments', label: 'الفلوس', icon: CreditCard },
-  { path: '/student/exams', label: 'الامتحانات', icon: FileText },
-  { path: '/student/grades', label: 'الدرجات', icon: Award },
-  { path: '/student/points', label: 'النقاط', icon: Star },
-  { path: '/student/online', label: 'أون لاين', icon: MonitorPlay },
-  { path: '/student/notes', label: 'الملاحظات', icon: StickyNote },
-  { path: '/student/heroes', label: 'أبطال مروا من هنا', icon: Medal },
-  { path: '/student/account', label: 'الحساب', icon: UserCircle }
+  { path: "/student/home", label: "الرئيسية", icon: LayoutDashboard },
+  { path: "/student/schedule", label: "جدولي", icon: CalendarDays },
+  { path: "/student/attendance", label: "حضورى", icon: ClipboardCheck },
+  { path: "/student/payments", label: "الفلوس", icon: CreditCard },
+  { path: "/student/exams", label: "الامتحانات", icon: FileText },
+  { path: "/student/grades", label: "الدرجات", icon: Award },
+  { path: "/student/points", label: "النقاط", icon: Star },
+  { path: "/student/online", label: "أون لاين", icon: MonitorPlay },
+  { path: "/student/notes", label: "الملاحظات", icon: StickyNote },
+  { path: "/student/heroes", label: "أبطال مروا من هنا", icon: Medal },
+  { path: "/student/account", label: "الحساب", icon: UserCircle },
 ];
 
 export default function MobileNav({ open, onClose }) {
   const { user } = useAuth();
-  const isTeacher = user?.role === 'teacher';
+  const isTeacher = user?.role === "teacher";
 
   return (
     <Sheet open={open} onOpenChange={onClose}>
@@ -71,14 +87,18 @@ export default function MobileNav({ open, onClose }) {
         {/* الجزء المعدل: تم إضافة الجملة تحت العنوان للموبايل */}
         <SheetHeader className="border-b p-6 text-right shrink-0 gap-1">
           <SheetTitle className="text-lg font-bold text-primary">
-            {isTeacher ? 'نظام المعلم' : 'منصة خطوة'}
+            {isTeacher ? "نظام المعلم" : "منصة خطوة"}
           </SheetTitle>
           {!isTeacher && (
-            <p className="text-xs text-muted-foreground font-medium text-right">
-              ابدأ من هنا ... خطوة بخطوة نحو القمة
-            </p>
+            <div className="mt-2 bg-gradient-to-l from-primary/10 to-transparent border-r-2 border-primary pr-3 py-1.5 rounded-l-md">
+              <p className="text-[11px] sm:text-xs font-semibold text-primary/90 leading-relaxed">
+                ابدأ من هنا ... خطوة بخطوة نحو القمة 🚀
+              </p>
+            </div>
           )}
-          <SheetDescription className="hidden">Navigation Menu</SheetDescription>
+          <SheetDescription className="hidden">
+            Navigation Menu
+          </SheetDescription>
         </SheetHeader>
 
         <nav className="p-4 flex-1 overflow-y-auto">
@@ -99,7 +119,7 @@ export default function MobileNav({ open, onClose }) {
                               "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
                               isActive
                                 ? "bg-primary text-primary-foreground shadow-sm"
-                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                                : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                             )
                           }
                         >
@@ -129,7 +149,7 @@ export default function MobileNav({ open, onClose }) {
                         "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
                         isActive
                           ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+                          : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
                       )
                     }
                   >

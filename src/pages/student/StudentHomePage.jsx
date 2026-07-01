@@ -90,7 +90,7 @@ export default function StudentHomePage() {
         ) : (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <Card className="border shadow-sm">
                 <CardContent className="p-4 text-center">
                   <ClipboardCheck className="h-7 w-7 text-green-600 mx-auto mb-2" />
@@ -99,6 +99,20 @@ export default function StudentHomePage() {
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
                     نسبة الحضور
+                  </p>
+                </CardContent>
+              </Card>
+
+              <Card className="border shadow-sm">
+                <CardContent className="p-4 text-center">
+                  <CreditCard className="h-7 w-7 text-blue-600 mx-auto mb-2" />
+                  <p
+                    className={`text-xl font-black ${stats.paidOk ? "text-green-600" : "text-red-600"}`}
+                  >
+                    {stats.paid}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    المدفوعات
                   </p>
                 </CardContent>
               </Card>
@@ -131,6 +145,7 @@ export default function StudentHomePage() {
                   </p>
                 </CardContent>
               </Card>
+
               <Card className="border shadow-sm">
                 <CardContent className="p-4 text-center">
                   <Star className="h-7 w-7 text-orange-400 mx-auto mb-2" />
@@ -142,19 +157,7 @@ export default function StudentHomePage() {
               </Card>
 
               
-              <Card className="border shadow-sm col-span-2 sm:col-span-1">
-                <CardContent className="p-4 text-center">
-                  <CreditCard className="h-7 w-7 text-blue-600 mx-auto mb-2" />
-                  <p
-                    className={`text-xl font-black ${stats.paidOk ? "text-green-600" : "text-red-600"}`}
-                  >
-                    {stats.paid}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    المدفوعات
-                  </p>
-                </CardContent>
-              </Card>
+              
             </div>
 
             {/* Latest Notes */}
