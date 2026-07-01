@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- Theme color (matches primary #6366f1) -->
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="background-color" content="#ffffff" />
+
+    <!-- App name & description -->
+    <meta name="application-name" content="خطوة" />
+    <meta name="description" content="منصة خطوة التعليمية — للطلاب والمدرسين" />
+
+    <!-- Apple PWA meta tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="خطوة" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
+    <link rel="icon" type="image/png" sizes="32x32"   href="/icons/icon-96x96.png" />
+    <link rel="shortcut icon"                          href="/icons/icon-96x96.png" />
+
+    <!-- Windows/Edge tiles -->
+    <meta name="msapplication-TileColor"   content="#6366f1" />
+    <meta name="msapplication-TileImage"   content="/icons/icon-144x144.png" />
+    <meta name="msapplication-config"      content="none" />
+
+    <!-- Open Graph -->
+    <meta property="og:type"        content="website" />
+    <meta property="og:title"       content="خطوة — منصة تعليمية" />
+    <meta property="og:description" content="منصة خطوة التعليمية — للطلاب والمدرسين" />
+    <meta property="og:image"       content="/icons/icon-512x512.png" />
+
+    <title>خطوة</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- Register Service Worker -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(reg => {
+              // Check for updates every 60 minutes
+              setInterval(() => reg.update(), 60 * 60 * 1000);
+            })
+            .catch(() => {});
+        });
+      }
+    </script>
+  </body>
+</html>
