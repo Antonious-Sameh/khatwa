@@ -92,7 +92,7 @@ export default function MobileNav({ open, onClose }) {
           {!isTeacher && (
             <div className="mt-2 bg-gradient-to-l from-primary/10 to-transparent border-r-2 border-primary pr-3 py-1.5 rounded-l-md">
               <p className="text-[11px] sm:text-xs font-semibold text-primary/90 leading-relaxed">
-                ابدأ من هنا ... خطوة بخطوة نحو القمة 🚀
+                ابدأ من هنا .. خطوة بخطوة نحو القمة 🚀
               </p>
             </div>
           )}
