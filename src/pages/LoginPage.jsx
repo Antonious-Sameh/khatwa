@@ -1,41 +1,30 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { KeyRound, ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
+import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
 
 export default function LoginPage() {
-  const [code, setCode] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [code,     setCode]     = useState('');
+  const [loading,  setLoading]  = useState(false);
   const [showCode, setShowCode] = useState(false);
-  
-  const { login } = useAuth();
-  const navigate = useNavigate();
-  const location = useLocation();
+
+  const { login }   = useAuth();
+  const navigate    = useNavigate();
+  const location    = useLocation();
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
     const trimmed = code.trim().replace(/\s+/g, '');
-    if (!trimmed) { 
-      toast.error('يرجى إدخال كود الدخول'); 
-      return; 
-    }
-
+    if (!trimmed) { toast.error('يرجى إدخال كود الدخول'); return; }
     setLoading(true);
     try {
       const user = await login(trimmed);
       toast.success(`مرحباً بك ${user.name}`);
       const from = location.state?.from?.pathname;
-      if (from && from !== '/') {
-        navigate(from, { replace: true });
-      } else {
-        navigate(user.role === 'teacher' ? '/teacher/home' : '/student/home', { replace: true });
-      }
+      if (from && from !== '/') navigate(from, { replace: true });
+      else navigate(user.role === 'teacher' ? '/teacher/home' : '/student/home', { replace: true });
     } catch (err) {
       toast.error(err?.response?.data?.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى');
     } finally {
@@ -44,142 +33,191 @@ export default function LoginPage() {
   };
 
   const handleInputChange = (e) => {
-    const value = e.target.value.replace(/\s+/g, '').toUpperCase();
-    setCode(value);
+    setCode(e.target.value.replace(/\s+/g, '').toUpperCase());
   };
 
   return (
     <>
-      <Helmet>
-        <title>تسجيل الدخول | خطوة بلس</title>
-      </Helmet>
+      <Helmet><title>تسجيل الدخول | منصة خطوة التعليمية</title></Helmet>
 
-      <div className="min-h-screen flex flex-col justify-between bg-gradient-to-b from-slate-50 to-blue-50/20 text-slate-900 px-4 antialiased selection:bg-blue-500/10 relative overflow-hidden">
-        
-        {/* الخلفية الجمالية الدائرية */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-7xl h-full pointer-events-none z-0">
-          <div className="absolute top-[-5%] left-[10%] w-[350px] h-[350px] bg-blue-500/[0.02] rounded-full blur-[60px]" />
-          <div className="absolute bottom-[15%] right-[10%] w-[350px] h-[350px] bg-blue-600/[0.02] rounded-full blur-[80px]" />
+      {/* ── Full-screen dark background ── */}
+      <div
+        className="min-h-screen flex flex-col"
+        style={{ background: 'linear-gradient(160deg, #0a0f1e 0%, #0d1a2e 50%, #0a0f1e 100%)' }}
+      >
+        {/* Subtle animated shimmer lines */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div style={{
+            position: 'absolute', top: '20%', left: '-10%',
+            width: '120%', height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.15), transparent)',
+          }} />
+          <div style={{
+            position: 'absolute', top: '60%', left: '-10%',
+            width: '120%', height: '1px',
+            background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.1), transparent)',
+          }} />
+          {/* Corner ornaments */}
+          <svg className="absolute top-0 left-0 w-32 h-32 opacity-10" viewBox="0 0 100 100" fill="none">
+            <path d="M0 0 L100 0 L0 100 Z" fill="rgba(212,175,55,0.3)" />
+            <path d="M10 0 L0 10 M20 0 L0 20 M30 0 L0 30" stroke="#D4AF37" strokeWidth="0.5" opacity="0.5" />
+          </svg>
+          <svg className="absolute top-0 right-0 w-32 h-32 opacity-10" viewBox="0 0 100 100" fill="none">
+            <path d="M100 0 L0 0 L100 100 Z" fill="rgba(212,175,55,0.3)" />
+            <path d="M90 0 L100 10 M80 0 L100 20 M70 0 L100 30" stroke="#D4AF37" strokeWidth="0.5" opacity="0.5" />
+          </svg>
+          <svg className="absolute bottom-0 left-0 w-32 h-32 opacity-10" viewBox="0 0 100 100" fill="none">
+            <path d="M0 100 L100 100 L0 0 Z" fill="rgba(212,175,55,0.3)" />
+          </svg>
+          <svg className="absolute bottom-0 right-0 w-32 h-32 opacity-10" viewBox="0 0 100 100" fill="none">
+            <path d="M100 100 L0 100 L100 0 Z" fill="rgba(212,175,55,0.3)" />
+          </svg>
         </div>
 
-        <div className="flex-1 flex flex-col justify-center py-12 sm:px-6 lg:px-8 relative z-10">
-          <div className="sm:mx-auto sm:w-full sm:max-w-[420px]">
-            <Card className="border border-slate-200/60 bg-white shadow-[0_15px_40px_rgba(0,0,0,0.03)] rounded-3xl overflow-visible mt-12">
-              
-              {/* هيدر الكارت السفلي المنحني الأزرق */}
-              <div className="relative bg-gradient-to-b from-blue-600 to-blue-700 pt-10 pb-20 px-6 text-center text-white rounded-t-3xl overflow-hidden">
-                <div className="absolute inset-0 opacity-10 pointer-events-none">
-                  <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0,0 C50,40 50,60 100,100 L100,0 Z" fill="currentColor" />
-                  </svg>
-                </div>
-                
-                <h1 className="relative z-10 text-2xl font-bold tracking-tight">
-                  خطوة بلس
-                </h1>
-                <p className="relative z-10 text-xs text-blue-100/80 mt-2 max-w-[280px] mx-auto leading-relaxed font-normal">
-                  منصة تعليمية لإدارة الدروس والاختبارات ومتابعة تقدم الطلاب بسهولة.
-                </p>
+        <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-4 py-10">
 
-                {/* تماوج المنحنى السفلي للهيدر */}
-                <div className="absolute bottom-0 inset-x-0 w-full overflow-hidden leading-[0] fill-white">
-                  <svg viewBox="0 0 1200 120" preserveAspectRatio="none" className="relative block w-full h-[48px]">
-                    <path d="M0,0 C150,90 350,120 600,120 C850,120 1050,90 1200,0 L1200,120 L0,120 Z" />
-                  </svg>
-                </div>
-              </div>
+          {/* ── Logo ── */}
+          <div className="mb-6 flex flex-col items-center">
+            <img
+              src="/icons/icon-512x512.png"
+              alt="منصة خطوة"
+              className="w-32 sm:w-36 drop-shadow-2xl rounded-2xl"
+              style={{ filter: 'drop-shadow(0 0 20px rgba(212,175,55,0.3))' }}
+            />
+          </div>
 
-              {/* منطقة صورة المدرس المبتكرة (تتوسط المنحنى بامتياز) */}
-              <div className="relative flex justify-center h-10 z-20">
-                <div className="absolute -top-14 w-24 h-24 rounded-full p-1 bg-white shadow-[0_8px_20px_rgba(0,0,0,0.08)] transition-transform duration-300 hover:scale-105">
-                  <div className="w-full h-full rounded-full overflow-hidden border border-slate-100 bg-slate-50 relative group">
-                    <img 
-                      src="/teacher.jpg" 
-                      alt="صورة المدرس" 
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                      loading="eager"
-                    />
-                    {/* لمعة خفيفة تظهر عند التحويم فوق الصورة */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/20 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  </div>
-                </div>
-              </div>
+          {/* ── Divider with ankh ── */}
+          <div className="flex items-center gap-3 mb-7 w-full max-w-sm">
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.5))' }} />
+            <span style={{ color: '#D4AF37', fontSize: '1.3rem' }}>☥</span>
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(270deg, transparent, rgba(212,175,55,0.5))' }} />
+          </div>
 
-              {/* محتوى الفورم تم زيادة الـ pt ليناسب نزول الصورة */}
-              <CardContent className="pt-14 pb-10 px-6 sm:px-10">
-                <form id="login-form" onSubmit={handleSubmit} className="space-y-6">
-                  
-                  <div className="space-y-2">
-                    <Label 
-                      htmlFor="code" 
-                      className="text-xs font-medium text-slate-500 pr-0.5"
-                    >
-                      أدخل كود الدخول
-                    </Label>
-                    
-                    <div className="relative flex items-center group">
-                      <Input
-                        id="code"
-                        type={showCode ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={code}
-                        onChange={handleInputChange}
-                        disabled={loading}
-                        className="text-center text-xl font-semibold tracking-[0.15em] h-12 bg-slate-50/50 border border-slate-200 text-slate-900 focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:bg-white focus-visible:border-blue-500 transition-all rounded-xl placeholder:tracking-normal placeholder:font-normal placeholder:text-slate-300 pl-12 pr-4 shadow-sm group-hover:border-slate-300/90"
-                        dir="ltr"
-                        autoFocus
-                        autoComplete="current-password"
-                        autoCapitalize="characters"
-                        inputMode="text"
-                        aria-label="كود الدخول"
-                      />
-                      
-                      <button
-                        type="button"
-                        onClick={() => setShowCode(!showCode)}
-                        className="absolute left-3.5 p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100/80 active:bg-slate-200/60 transition-all rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        aria-label={showCode ? "إخفاء الكود" : "إظهار الكود"}
-                      >
-                        {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
+          {/* ── Login Card ── */}
+          <div
+            className="w-full max-w-sm rounded-2xl overflow-hidden"
+            style={{
+              background: 'linear-gradient(145deg, rgba(255,255,255,0.04) 0%, rgba(212,175,55,0.04) 100%)',
+              border: '1px solid rgba(212,175,55,0.25)',
+              boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(212,175,55,0.1)',
+            }}
+          >
+            {/* Card header */}
+            <div
+              className="px-6 pt-6 pb-5 text-center"
+              style={{ borderBottom: '1px solid rgba(212,175,55,0.12)' }}
+            >
+              <h2
+                className="text-xl font-bold tracking-wide mb-1"
+                style={{ color: '#D4AF37', fontFamily: 'serif' }}
+              >
+                الخطوة الأولى: تسجيل الدخول
+              </h2>
+              <p className="text-xs" style={{ color: 'rgba(212,175,55,0.6)' }}>
+                أدخل كود الدخول الخاص بك
+              </p>
+            </div>
 
-                  <Button
-                    type="submit"
-                    className="w-full h-12 text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 rounded-xl shadow-sm transition-all duration-150 flex items-center justify-center gap-2 group"
-                    disabled={loading}
+            {/* Card body */}
+            <div className="px-6 py-7">
+              <form onSubmit={handleSubmit} className="space-y-5">
+
+                {/* Input */}
+                <div className="relative">
+                  {/* Eye of Horus icon */}
+                  <div
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 flex items-center justify-center w-7 h-7 rounded-lg"
+                    style={{ color: 'rgba(212,175,55,0.7)' }}
                   >
-                    {loading ? (
-                      <span className="flex items-center gap-2" role="status" aria-live="polite">
-                        <span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
-                        <span>جارٍ تسجيل الدخول...</span>
-                      </span>
-                    ) : (
-                      <>
-                        <span>تسجيل الدخول</span>
-                        <ArrowLeft className="h-4 w-4 transition-transform duration-150 group-hover:-translate-x-0.5 rtl:rotate-180" />
-                      </>
-                    )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
+                      <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/>
+                    </svg>
+                  </div>
+
+                  <input
+                    type={showCode ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={code}
+                    onChange={handleInputChange}
+                    disabled={loading}
+                    autoFocus
+                    autoComplete="current-password"
+                    autoCapitalize="characters"
+                    inputMode="text"
+                    dir="ltr"
+                    className="w-full h-13 py-3.5 pr-12 pl-12 rounded-xl text-center text-lg font-semibold tracking-[0.2em] outline-none transition-all duration-200 placeholder:tracking-normal placeholder:font-normal"
+                    style={{
+                      background: 'rgba(255,255,255,0.05)',
+                      border: '1px solid rgba(212,175,55,0.3)',
+                      color: '#f0d98a',
+                      fontSize: '1.15rem',
+                    }}
+                    onFocus={e => { e.target.style.borderColor = 'rgba(212,175,55,0.7)'; e.target.style.background = 'rgba(212,175,55,0.06)'; }}
+                    onBlur={e => { e.target.style.borderColor = 'rgba(212,175,55,0.3)'; e.target.style.background = 'rgba(255,255,255,0.05)'; }}
+                  />
+
+                  {/* Show/hide toggle */}
+                  <button
+                    type="button"
+                    onClick={() => setShowCode(!showCode)}
+                    className="absolute left-3.5 top-1/2 -translate-y-1/2 p-1.5 rounded-lg transition-colors"
+                    style={{ color: 'rgba(212,175,55,0.5)' }}
+                    aria-label={showCode ? 'إخفاء' : 'إظهار'}
+                  >
+                    {showCode ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+
+                {/* Submit button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full h-13 py-3.5 rounded-xl font-bold text-base tracking-wide transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                  style={{
+                    background: loading
+                      ? 'rgba(212,175,55,0.4)'
+                      : 'linear-gradient(135deg, #c9a227 0%, #e8c84a 50%, #c9a227 100%)',
+                    color: '#0a0f1e',
+                    boxShadow: loading ? 'none' : '0 4px 20px rgba(212,175,55,0.3)',
+                    border: '1px solid rgba(212,175,55,0.4)',
+                  }}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>جارٍ تسجيل الدخول...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>⟩</span>
+                      <span>تسجيل الدخول</span>
+                    </>
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+
+          {/* ── Bottom divider ── */}
+          <div className="flex items-center gap-3 mt-7 w-full max-w-sm">
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(90deg, transparent, rgba(212,175,55,0.3))' }} />
+            <span style={{ color: 'rgba(212,175,55,0.4)', fontSize: '1rem' }}>☥</span>
+            <div style={{ flex: 1, height: '1px', background: 'linear-gradient(270deg, transparent, rgba(212,175,55,0.3))' }} />
           </div>
         </div>
 
-        {/* الفوتر الثابت والمحمي بالحقوق */}
-        <footer className="w-full py-6 text-center border-t border-slate-100 bg-transparent relative z-10">
-          <div className="max-w-md mx-auto flex flex-col items-center justify-center gap-1 px-4">
-            <p className="text-xs text-slate-400 font-normal">
-              &copy; 2026 خطوة بلس. جميع الحقوق محفوظة.
-            </p>
-            <p className="text-[11px] text-slate-400/80 font-normal mt-0.5">
-              تطوير: المهندس أنطونيوس سامح
-            </p>
-          </div>
+        {/* ── Footer ── */}
+        <footer
+          className="relative z-10 py-5 text-center"
+          style={{ borderTop: '1px solid rgba(212,175,55,0.08)' }}
+        >
+          <p className="text-xs" style={{ color: 'rgba(212,175,55,0.4)' }}>
+            © 2026 خطوة بلس. جميع الحقوق محفوظة.
+          </p>
+          <p className="text-xs mt-1" style={{ color: 'rgba(212,175,55,0.3)' }}>
+            تطوير: المهندس أنطونيوس سامح
+          </p>
         </footer>
-
       </div>
     </>
   );

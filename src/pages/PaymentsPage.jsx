@@ -188,7 +188,7 @@ function EditPeriodModal({ payment, onClose, onSaved }) {
 
 
 // ── Student Payment Card ──────────────────────────────────────────────────────
-function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh }) {
+function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment }) {
   const { student, totalRequired, totalPaid, totalRemaining, months } = studentData;
   const [instModal,   setInstModal]   = useState(null);
   const [createModal, setCreateModal] = useState(false);
@@ -201,7 +201,8 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh }) {
     try {
       await paymentsAPI.deleteInstallment(paymentId, instId);
       toast.success('تم حذف الدفعة');
-      onRefresh();
+      // Update local state only — no full reload, no scroll reset
+      onDeleteInstallment(student._id, paymentId, instId);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشل الحذف');
     }
@@ -406,6 +407,25 @@ export default function PaymentsPage() {
     finally { setLoading(false); }
   };
 
+  // Optimistic local delete — removes the installment from state without reload
+  const handleDeleteInstallment = (studentId, paymentId, instId) => {
+    setPayments(prev => {
+      const students = prev.students.map(s => {
+        if (s.student._id !== studentId) return s;
+        const months = s.months.map(p => {
+          if (p._id !== paymentId) return p;
+          const installments = (p.installments || []).filter(i => i._id !== instId);
+          const totalPaidMonth = installments.reduce((sum, i) => sum + (i.amount || 0), 0);
+          return { ...p, installments, totalPaid: totalPaidMonth };
+        });
+        const totalPaid = months.reduce((sum, p) => sum + p.totalPaid, 0);
+        const totalRemaining = Math.max(0, s.totalRequired - totalPaid);
+        return { ...s, months, totalPaid, totalRemaining };
+      });
+      return { ...prev, students };
+    });
+  };
+
   useEffect(() => { if (selectedYear) load(); }, [selectedYear, selectedGroup]);
 
   const { students = [], summary = {} } = payments;
@@ -545,6 +565,7 @@ export default function PaymentsPage() {
                       studentData={s}
                       groupMonthlyFee={groupMonthlyFee}
                       onRefresh={load}
+                      onDeleteInstallment={handleDeleteInstallment}
                     />
                   ))}
                 </Accordion>
