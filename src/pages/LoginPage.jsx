@@ -79,10 +79,10 @@ export default function LoginPage() {
           {/* ── Logo ── */}
           <div className="mb-6 flex flex-col items-center">
             <img
-              src="/icons/icon-512x512.png"
+              src="/logo.png"
               alt="منصة خطوة"
-              className="w-32 sm:w-36 drop-shadow-2xl rounded-2xl"
-              style={{ filter: 'drop-shadow(0 0 20px rgba(212,175,55,0.3))' }}
+              className="w-52 sm:w-64 drop-shadow-2xl"
+              onError={e => { e.target.style.display = 'none'; }}
             />
           </div>
 
