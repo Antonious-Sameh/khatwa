@@ -132,10 +132,10 @@
           });
 
           // When SW activates (new version), reload once to flush stale assets
-          let refreshing = false;
-          navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) { refreshing = true; window.location.reload(); }
-          });
+          //let refreshing = false;
+          //navigator.serviceWorker.addEventListener('controllerchange', () => {
+            //if (!refreshing) { refreshing = true; window.location.reload(); }
+          //});
         });
       }
     </script>
