@@ -1,11 +1,12 @@
 {
+  "id": "/?id=khatwa-pwa",
   "name": "منصة خطوة التعليمية",
   "short_name": "خطوة",
   "description": "منصة خطوة التعليمية — دراسات اجتماعية وتاريخ",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "background_color": "#080d1a",
   "theme_color": "#080d1a",
   "lang": "ar",
@@ -32,4 +33,5 @@
       "icons": [{ "src": "/icons/icon-96x96.png", "sizes": "96x96", "type": "image/png" }]
     }
   ],
-  "prefer_related_applications": false}
+  "prefer_related_applications": false
+}
