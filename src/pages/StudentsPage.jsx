@@ -31,7 +31,18 @@ function NewStudentCodeModal({ studentName, code, onClose }) {
   const [copied, setCopied] = useState(false);
 
   const copy = () => {
-    navigator.clipboard.writeText(code);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).catch(() => {});
+    } else {
+      try { 
+        const t = document.createElement('textarea');
+        t.value = code;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t); 
+      } catch {}
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -218,7 +229,18 @@ function ResetCodeModal({ student, onClose }) {
   };
 
   const copy = () => {
-    navigator.clipboard.writeText(newCode);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(newCode).catch(() => {});
+    } else {
+      try { 
+        const t = document.createElement('textarea');
+        t.value = newCode;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t); 
+      } catch {}
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

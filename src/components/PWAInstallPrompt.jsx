@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Download, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { safeLocalStorage } from '@/lib/safe-storage';
 
 export default function PWAInstallPrompt() {
   const [prompt,    setPrompt]    = useState(null);
@@ -11,7 +12,7 @@ export default function PWAInstallPrompt() {
     // Don't show if already installed (standalone mode)
     if (window.matchMedia('(display-mode: standalone)').matches) return;
     // Don't show if user dismissed recently (7 days)
-    const last = localStorage.getItem('pwa-dismissed');
+    const last = safeLocalStorage.getItem('pwa-dismissed');
     if (last && Date.now() - Number(last) < 7 * 24 * 60 * 60 * 1000) return;
 
     const handler = (e) => {
@@ -30,14 +31,14 @@ export default function PWAInstallPrompt() {
     setVisible(false);
     setPrompt(null);
     if (outcome === 'dismissed') {
-      localStorage.setItem('pwa-dismissed', Date.now().toString());
+      safeLocalStorage.setItem('pwa-dismissed', Date.now().toString());
     }
   };
 
   const handleDismiss = () => {
     setVisible(false);
     setDismissed(true);
-    localStorage.setItem('pwa-dismissed', Date.now().toString());
+    safeLocalStorage.setItem('pwa-dismissed', Date.now().toString());
   };
 
   if (!visible || dismissed) return null;

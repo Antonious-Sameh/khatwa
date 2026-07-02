@@ -114,13 +114,27 @@
             })
             .catch(() => {}); // Fail silently — app works without SW
 
+          // When SW sends ASSET_NOT_FOUND → stale cache after deploy → clear and reload
+          navigator.serviceWorker.addEventListener('message', (e) => {
+            if (e.data?.type === 'ASSET_NOT_FOUND') {
+              console.warn('[PWA] Stale asset detected:', e.data.url, '— clearing cache and reloading');
+              if ('caches' in window) {
+                caches.keys()
+                  .then(keys => Promise.all(keys.map(k => caches.delete(k))))
+                  .then(() => window.location.reload());
+              } else {
+                window.location.reload();
+              }
+            }
+            if (e.data?.type === 'SW_UPDATED') {
+              console.info('[PWA] New service worker activated, version:', e.data.version);
+            }
+          });
+
           // When SW activates (new version), reload once to flush stale assets
           let refreshing = false;
           navigator.serviceWorker.addEventListener('controllerchange', () => {
-            if (!refreshing) {
-              refreshing = true;
-              window.location.reload();
-            }
+            if (!refreshing) { refreshing = true; window.location.reload(); }
           });
         });
       }

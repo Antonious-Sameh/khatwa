@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { authAPI } from '@/api/services';
 import { setAccessToken, clearAccessToken } from '@/api/axios';
+import { safeLocalStorage, safeSessionStorage } from '@/lib/safe-storage';
 
 const AuthContext = createContext(null);
 
@@ -31,19 +32,17 @@ export function AuthProvider({ children }) {
 
   // ── Persist user to localStorage (safe fields only) ──────────────────────
   const persistUser = useCallback((u) => {
-    if (!u) { localStorage.removeItem(USER_KEY); return; }
-    try {
-      localStorage.setItem(USER_KEY, JSON.stringify({
-        _id: u._id, name: u.name, role: u.role,
-        avatar: u.avatar || null,
-        academicYear: u.academicYear || null,
-        codePlain: u.codePlain || null,
-      }));
-    } catch {}
+    if (!u) { safeLocalStorage.removeItem(USER_KEY); return; }
+    safeLocalStorage.setItem(USER_KEY, JSON.stringify({
+      _id: u._id, name: u.name, role: u.role,
+      avatar: u.avatar || null,
+      academicYear: u.academicYear || null,
+      codePlain: u.codePlain || null,
+    }));
   }, []);
 
   const getCachedUser = () => {
-    try { return JSON.parse(localStorage.getItem(USER_KEY) || 'null'); } catch { return null; }
+    try { return JSON.parse(safeLocalStorage.getItem(USER_KEY) || 'null'); } catch { return null; }
   };
 
   // ── Schedule proactive token refresh (every 12 min, access token lives 15m)
@@ -157,7 +156,7 @@ export function AuthProvider({ children }) {
       e.response = { data: { message: 'الكود غير صحيح' } };
       throw e;
     }
-    sessionStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
+    safeSessionStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
     setUser(demoUser);
     return demoUser;
   }, [mode, scheduleRefresh, persistUser]);
@@ -169,7 +168,7 @@ export function AuthProvider({ children }) {
       try { await authAPI.logout(); } catch {}
       clearAccessToken();
     }
-    sessionStorage.removeItem(DEMO_KEY);
+    safeSessionStorage.removeItem(DEMO_KEY);
     persistUser(null);
     setUser(null);
   }, [mode, persistUser]);
