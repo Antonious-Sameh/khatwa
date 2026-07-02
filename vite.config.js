@@ -38,45 +38,37 @@ export default defineConfig({
     },
   },
 
+  
   build: {
-    // ── هذا هو السبب الرئيسي للـ Crash على بعض الأجهزة ──
-    // بدون target، Vite يبني بـ esnext = ES2022 = يقع على Chrome < 88
-    // Chrome 87 = Android 10 على تابلتات كثيرة
-    // target: chrome80 = يضمن التوافق مع Chrome 80+ (98%+ من الأجهزة الحالية)
+    // تحديد الأجهزة المتوافقة لضمان عمل المنصة على تابلتات وموبايلات الطلاب القديمة والحديثة
     target: ["es2015", "chrome80", "firefox78", "safari13"],
 
     chunkSizeWarningLimit: 800,
 
     rollupOptions: {
       output: {
-        // Hashed filenames = كاش صح + invalidation تلقائي
         entryFileNames: "assets/[name]-[hash].js",
         chunkFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
 
-        // ✅ تحويل manualChunks إلى دالة متوافقة تماماً مع Vite 8 / Rolldown
         manualChunks(id) {
           if (id.includes("node_modules")) {
-            // تجميع مكتبات React الأساسية
             if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
               return "vendor-react";
             }
-            // تجميع مكتبات واجهة المستخدم UI
             if (id.includes("@radix-ui")) {
               return "vendor-ui";
             }
-            // باقي المكتبات المساعدة والأدوات
             return "vendor-utils";
           }
         },
       },
     },
 
-    // ✅ التغيير إلى esbuild الافتراضي المستقر جداً مع تطبيقات أندرويد المثبتة
-    minify: "esbuild",
-
+    // ✅ حذفنا كلمة terser و esbuild وسيبناها بدون تحديد عشان يعتمد على الـ Compiler الافتراضي والآمن لـ Vite 8
     sourcemap: false,
   },
+
 
   server: {
     host: "::",
