@@ -72,18 +72,8 @@ export default defineConfig({
       },
     },
 
-    minify: "terser",
-
-    terserOptions: {
-      compress: {
-        // ❌ drop_console: true كان بيحذف error logging → crashes صامتة
-        // بنحتفظ بـ console.error و console.warn للـ debugging
-        drop_console: false,
-        drop_debugger: true,
-        pure_funcs: ["console.log", "console.info", "console.debug"],
-        // console.error و console.warn بيفضلوا
-      },
-    },
+    // ✅ التغيير إلى esbuild الافتراضي المستقر جداً مع تطبيقات أندرويد المثبتة
+    minify: "esbuild",
 
     sourcemap: false,
   },
