@@ -54,11 +54,20 @@ export default defineConfig({
         chunkFileNames: "assets/[name]-[hash].js",
         assetFileNames: "assets/[name]-[hash].[ext]",
 
-        // Split vendor chunks لتحسين الأداء
-        manualChunks: {
-          "vendor-react":  ["react", "react-dom", "react-router-dom"],
-          "vendor-ui":     ["@radix-ui/react-dialog", "@radix-ui/react-dropdown-menu", "@radix-ui/react-select"],
-          "vendor-utils":  ["axios", "sonner", "clsx", "tailwind-merge"],
+        // ✅ تحويل manualChunks إلى دالة متوافقة تماماً مع Vite 8 / Rolldown
+        manualChunks(id) {
+          if (id.includes("node_modules")) {
+            // تجميع مكتبات React الأساسية
+            if (id.includes("react") || id.includes("react-dom") || id.includes("react-router-dom")) {
+              return "vendor-react";
+            }
+            // تجميع مكتبات واجهة المستخدم UI
+            if (id.includes("@radix-ui")) {
+              return "vendor-ui";
+            }
+            // باقي المكتبات المساعدة والأدوات
+            return "vendor-utils";
+          }
         },
       },
     },

@@ -2,12 +2,12 @@
  * sw.js — منصة خطوة التعليمية
  *
  * استراتيجية: injectManifest مع vite-plugin-pwa
- * الـ plugin بيحقن self.__WB_MANIFEST تلقائياً عند البناء.
+ * الـ plugin بيحقن الكلمة المحجوزة تلقائياً عند البناء.
  * ده بيضمن إن كل ملف JS/CSS له hash صح في الكاش،
  * وبعد أي deploy، الكاش القديم بيتحذف تلقائياً.
  *
- * ⚠️ ملاحظة: self.__WB_MANIFEST بيتحقن بـ vite-plugin-pwa
- * لو شغّلنا sw.js يدوي من غير build، هيرجع []
+ * ⚠️ ملاحظة: الحقن بيتم تلقائياً عبر المترجم
+ * لو شغّلنا sw.js يدوي من غير build، هيرجع مصفوفة فارغة
  */
 
 import { precacheAndRoute, cleanupOutdatedCaches, createHandlerBoundToURL } from "workbox-precaching";
@@ -17,8 +17,7 @@ import { ExpirationPlugin } from "workbox-expiration";
 import { CacheableResponsePlugin } from "workbox-cacheable-response";
 
 // ── 1. Precache: كل ملفات JS/CSS/HTML المبنية بـ Vite (مع hashes) ──────────
-// self.__WB_MANIFEST بيتحقن تلقائياً بـ vite-plugin-pwa وبيحتوي على:
-// [{ url: '/assets/main-abc123.js', revision: null }, ...]
+// المصفوفة المحقونة تلقائياً تحتوي على روابط الملفات بنسخها الهاشية
 precacheAndRoute(self.__WB_MANIFEST || []);
 
 // ── 2. امسح كاش الإصدارات القديمة فوراً ──────────────────────────────────
@@ -70,7 +69,7 @@ self.addEventListener("activate", (e) => {
       .then(() => self.clients.matchAll({ type: "window" }))
       .then((clients) =>
         clients.forEach((c) =>
-          c.postMessage({ type: "SW_UPDATED", version: self.__WB_MANIFEST?.length || 0 })
+          c.postMessage({ type: "SW_UPDATED", version: 1 })
         )
       )
   );
