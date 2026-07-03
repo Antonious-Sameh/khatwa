@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { KeyRound, ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { KeyRound, ArrowLeft, Eye, EyeOff, Phone, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -75,7 +75,7 @@ export default function LoginPage() {
                 </div>
                 
                 <h1 className="relative z-10 text-2xl font-bold tracking-tight">
-                  خطوة بلس
+                  خطوة 
                 </h1>
                 <p className="relative z-10 text-xs text-blue-100/80 mt-2 max-w-[280px] mx-auto leading-relaxed font-normal">
                   منصة تعليمية لإدارة الدروس والاختبارات ومتابعة تقدم الطلاب بسهولة.
@@ -172,7 +172,7 @@ export default function LoginPage() {
         <footer className="w-full py-6 text-center border-t border-slate-100 bg-transparent relative z-10">
           <div className="max-w-md mx-auto flex flex-col items-center justify-center gap-1 px-4">
             <p className="text-xs text-slate-400 font-normal">
-              &copy; 2026 خطوة بلس. جميع الحقوق محفوظة.
+              &copy; 2026 خطوة . جميع الحقوق محفوظة.
             </p>
             <p className="text-[11px] text-slate-400/80 font-normal mt-0.5">
               تطوير: المهندس أنطونيوس سامح
