@@ -8,6 +8,7 @@ import {
   Trophy,
   Bell,
   Loader2,
+  Clock, // ضفنا أيقونة الساعة هنا
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { useAuth } from "@/contexts/AuthContext";
@@ -26,6 +27,18 @@ export default function StudentHomePage() {
   const [report, setReport] = useState(null);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // دالة حساب الوقت المنقضي للإعلانات
+  const timeAgo = (dateStr) => {
+    if (!dateStr) return "";
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `منذ ${mins} دقيقة`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `منذ ${hrs} ساعة`;
+    const days = Math.floor(hrs / 24);
+    return `منذ ${days} يوم`;
+  };
 
   useEffect(() => {
     Promise.all([
@@ -63,8 +76,8 @@ export default function StudentHomePage() {
   const demoNotes = notes.length
     ? notes
     : [
-        { _id: "1", text: "امتحان يوم الخميس القادم — حضور إلزامي" },
-        { _id: "2", text: "إحضار كتاب المدرسة في الحصة القادمة" },
+        { _id: "1", text: "امتحان يوم الخميس القادم — حضور إلزامي", createdAt: new Date(Date.now() - 30 * 60000).toISOString() }, // نص تجريبي مع وقت
+        { _id: "2", text: "إحضار كتاب المدرسة في الحصة القادمة", createdAt: new Date(Date.now() - 3 * 3600000).toISOString() }, // نص تجريبي مع وقت
       ];
 
   return (
@@ -116,19 +129,7 @@ export default function StudentHomePage() {
                   </p>
                 </CardContent>
               </Card>
-              
-              {/*<Card className="border shadow-sm">
-                <CardContent className="p-4 text-center">
-                  <ClipboardCheck className="h-7 w-7 text-primary mx-auto mb-2" />
-                  <p className="text-3xl font-black text-primary">
-                    {stats.totalScore}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    عدد الامتحانات
-                  </p>
-                </CardContent>
-              </Card>*/}
-              
+
               <Card className="border shadow-sm">
                 <CardContent className="p-4 text-center">
                   <Trophy className="h-7 w-7 text-yellow-500 mx-auto mb-2" />
@@ -155,9 +156,6 @@ export default function StudentHomePage() {
                   <p className="text-xs text-muted-foreground mt-1">نقاطي</p>
                 </CardContent>
               </Card>
-
-              
-              
             </div>
 
             {/* Latest Notes */}
@@ -169,10 +167,20 @@ export default function StudentHomePage() {
                 {demoNotes.map((n) => (
                   <div
                     key={n._id}
-                    className="flex items-start gap-3 p-4 bg-card border rounded-xl shadow-sm"
+                    className="flex flex-col justify-between gap-2 p-4 bg-card border rounded-xl shadow-sm md:flex-row md:items-center"
                   >
-                    <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
-                    <p className="text-sm">{n.text}</p>
+                    <div className="flex items-start gap-3">
+                      <div className="w-2 h-2 rounded-full bg-primary shrink-0 mt-2" />
+                      <p className="text-sm">{n.text}</p>
+                    </div>
+                    
+                    {/* هنا جزء التاريخ والوقت المنقضي مع الأيقونة */}
+                    {n.createdAt && (
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground shrink-0 mr-5 md:mr-0">
+                        <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
+                        <span>{timeAgo(n.createdAt)}</span>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
