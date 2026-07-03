@@ -4,113 +4,110 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover" />
 
-    <link rel="manifest" href="/manifest.json" />
+    <link rel="manifest" href="/manifest.webmanifest" />
 
     <meta name="theme-color" content="#080d1a" />
     <meta name="background-color" content="#080d1a" />
-
     <meta name="application-name" content="خطوة" />
     <meta name="description" content="منصة خطوة التعليمية — دراسات اجتماعية وتاريخ" />
 
+    <!-- Apple PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="خطوة" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
-    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-    <link rel="apple-touch-icon" sizes="144x144" href="/icons/icon-144x144.png" />
-    <link rel="apple-touch-icon" sizes="128x128" href="/icons/icon-128x128.png" />
 
+    <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32"   href="/icons/icon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16"   href="/icons/icon-16x16.png" />
-    <link rel="icon" type="image/png" sizes="96x96"   href="/icons/icon-96x96.png" />
-    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192x192.png" />
     <link rel="shortcut icon"                          href="/icons/icon-96x96.png" />
 
+    <!-- Windows -->
     <meta name="msapplication-TileColor" content="#080d1a" />
     <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
     <meta name="msapplication-config"    content="none" />
 
-    <meta property="og:type"        content="website" />
-    <meta property="og:title"       content="منصة خطوة التعليمية" />
-    <meta property="og:description" content="منصة خطوة التعليمية — دراسات اجتماعية وتاريخ" />
-    <meta property="og:image"       content="/icons/icon-512x512.png" />
-
-    <link rel="preconnect" href="https://api.khatwaplus.com" crossorigin />
-    <link rel="dns-prefetch" href="https://api.khatwaplus.com" />
+    <!-- Preconnect -->
     <link rel="preconnect" href="https://res.cloudinary.com" crossorigin />
 
     <title>خطوة — منصة تعليمية</title>
 
+    <!-- Prevent white flash on dark theme -->
     <style>
-      html, body { background-color: #080d1a; margin: 0; padding: 0; }
-      #root { min-height: 100vh; }
-      /* Loading spinner shown before React mounts */
-      #app-loader {
-        position: fixed; inset: 0; background: #080d1a;
-        display: flex; align-items: center; justify-content: center;
-        z-index: 9999; transition: opacity 0.3s;
+      html,body{background:#080d1a;margin:0;padding:0}
+      #root{min-height:100vh}
+      #app-loader{
+        position:fixed;inset:0;background:#080d1a;
+        display:flex;align-items:center;justify-content:center;
+        z-index:9999;
       }
-      #app-loader.hidden { opacity: 0; pointer-events: none; }
-      .loader-ring {
-        width: 44px; height: 44px;
-        border: 3px solid rgba(212,175,55,0.15);
-        border-top-color: #D4AF37;
-        border-radius: 50%;
-        animation: spin 0.8s linear infinite;
+      .loader-ring{
+        width:44px;height:44px;
+        border:3px solid rgba(212,175,55,0.15);
+        border-top-color:#D4AF37;
+        border-radius:50%;
+        animation:spin .8s linear infinite;
       }
-      @keyframes spin { to { transform: rotate(360deg); } }
+      @keyframes spin{to{transform:rotate(360deg)}}
     </style>
   </head>
   <body>
-    <div id="app-loader">
-      <div class="loader-ring"></div>
-    </div>
-
+    <div id="app-loader"><div class="loader-ring"></div></div>
     <div id="root"></div>
-
     <script type="module" src="/src/main.jsx"></script>
 
     <script>
-      // Hide the splash loader once React renders
-      document.addEventListener('DOMContentLoaded', () => {
-        const loader = document.getElementById('app-loader');
+      // Hide loader after React mounts
+      window.addEventListener('DOMContentLoaded', function() {
+        var loader = document.getElementById('app-loader');
         if (!loader) return;
-        const hide = () => { loader.classList.add('hidden'); setTimeout(() => loader.remove(), 400); };
-        setTimeout(hide, 200);
+        setTimeout(function() {
+          loader.style.opacity = '0';
+          loader.style.transition = 'opacity 0.3s';
+          setTimeout(function() { if (loader.parentNode) loader.parentNode.removeChild(loader); }, 350);
+        }, 150);
       });
 
-      // ✅ كود تسجيل الـ Service Worker المباشر والنظيف بدون أي ريفريش يفسد تثبيت الـ PWA
+      // Register SW — vite-plugin-pwa (generateSW) يبني sw.js بدون ES modules
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then(reg => {
-              console.log('[PWA] Service Worker مسجل بنجاح!');
-              
-              // فحص التحديثات كل 30 دقيقة
-              setInterval(() => reg.update(), 30 * 60 * 1000);
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            .then(function(reg) {
+              // Check for updates every 30 min
+              setInterval(function() { reg.update(); }, 30 * 60 * 1000);
 
-              reg.addEventListener('updatefound', () => {
-                const newWorker = reg.installing;
+              reg.addEventListener('updatefound', function() {
+                var newWorker = reg.installing;
                 if (!newWorker) return;
-                newWorker.addEventListener('statechange', () => {
+                newWorker.addEventListener('statechange', function() {
                   if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                    // تفعيل الإصدار الجديد فوراً
                     newWorker.postMessage({ type: 'SKIP_WAITING' });
                   }
                 });
               });
             })
-            .catch(err => console.error('[PWA] فشل تسجيل الـ SW:', err));
+            .catch(function() {
+              // SW registration failed — app still works, just without offline support
+              console.warn('[PWA] Service Worker registration failed — running without SW');
+            });
 
-          // استقبال الرسائل لتنظيف الكاش القديم عند الحاجة
-          navigator.serviceWorker.addEventListener('message', (e) => {
-            if (e.data?.type === 'ASSET_NOT_FOUND') {
-              console.warn('[PWA] ملف قديم مكتشف — يتم مسح الكاش الآن');
+          // Reload once when new SW takes control
+          var refreshing = false;
+          navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (!refreshing) {
+              refreshing = true;
+              window.location.reload();
+            }
+          });
+
+          // SW → App messages
+          navigator.serviceWorker.addEventListener('message', function(e) {
+            if (e.data && e.data.type === 'ASSET_NOT_FOUND') {
               if ('caches' in window) {
-                caches.keys()
-                  .then(keys => Promise.all(keys.map(k => caches.delete(k))))
-                  .then(() => window.location.reload());
+                caches.keys().then(function(keys) {
+                  return Promise.all(keys.map(function(k) { return caches.delete(k); }));
+                }).then(function() { window.location.reload(); });
               } else {
                 window.location.reload();
               }
