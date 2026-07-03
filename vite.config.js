@@ -8,17 +8,22 @@ export default defineConfig({
     react(),
 
     VitePWA({
-      // generateSW: Workbox تكتب الـ SW بالكامل تلقائياً
-      // مضمونة 100% على كل الأجهزة — لا ES modules، لا import syntax
       strategies: "generateSW",
       registerType: "autoUpdate",
+      injectRegister: false,
 
-      // الـ SW يتحدث فوراً بدون انتظار
-      injectRegister: false, // بنسجله يدوياً في index.html
+      // ❌ لا تضيف icons الـ manifest تلقائياً للـ precache
+      // ده كان السبب الرئيسي لضخامة الـ precache رغم globPatterns الصغيرة
+      includeManifestIcons: false,
 
       workbox: {
-        // كل الملفات اللي هتتحفظ في الكاش مع hashes
-        globPatterns: ["**/*.{js,css,html,ico,png,svg,woff,woff2}"],
+        // ✅ precache: JS + CSS + HTML فقط (~900KB)
+        // كل الصور والأيقونات تتحمل runtime عبر CacheFirst
+        globPatterns: [
+          "assets/**/*.{js,css}",
+          "index.html",
+          "manifest.webmanifest",
+        ],
         globIgnores: ["**/node_modules/**"],
 
         // Navigation fallback → الـ SPA يشتغل على أي URL
@@ -27,6 +32,26 @@ export default defineConfig({
 
         // لا تخزن API calls
         runtimeCaching: [
+          // Icons small (already precached) — just in case
+          {
+            urlPattern: /\/icons\/.+\.(png|svg|ico)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "icons-cache",
+              expiration: { maxEntries: 20, maxAgeSeconds: 90 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+          // Large icons (512px, 384px) — load on demand, not in precache
+          {
+            urlPattern: /\/icons-hd\/.+\.(png|svg)$/,
+            handler: "CacheFirst",
+            options: {
+              cacheName: "icons-hd-cache",
+              expiration: { maxEntries: 10, maxAgeSeconds: 90 * 24 * 60 * 60 },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
           // Google Docs Viewer (PDF عرض)
           {
             urlPattern: /^https:\/\/docs\.google\.com\//,
@@ -81,9 +106,10 @@ export default defineConfig({
           { src: "/icons/icon-180x180.png",          sizes: "180x180", type: "image/png", purpose: "any" },
           { src: "/icons/icon-192x192.png",          sizes: "192x192", type: "image/png", purpose: "any" },
           { src: "/icons/icon-192x192-maskable.png", sizes: "192x192", type: "image/png", purpose: "maskable" },
-          { src: "/icons/icon-384x384.png",          sizes: "384x384", type: "image/png", purpose: "any" },
-          { src: "/icons/icon-512x512.png",          sizes: "512x512", type: "image/png", purpose: "any" },
-          { src: "/icons/icon-512x512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+          // 384 & 512 → icons-hd/ (not precached, loaded on demand)
+          { src: "/icons-hd/icon-384x384.png",          sizes: "384x384", type: "image/png", purpose: "any" },
+          { src: "/icons-hd/icon-512x512.png",          sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/icons-hd/icon-512x512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
 
