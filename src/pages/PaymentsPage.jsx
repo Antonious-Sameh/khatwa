@@ -22,6 +22,8 @@ const ACADEMIC_YEARS = [
   { value: 'second-sec',  label: 'الصف الثاني الثانوي'  },
 ];
 
+// Free-text period — no fixed months list
+
 // ── Installment Modal ─────────────────────────────────────────────────────────
 function InstallmentModal({ paymentId, installment, onClose, onSaved }) {
   const isEdit = !!installment;
@@ -33,16 +35,14 @@ function InstallmentModal({ paymentId, installment, onClose, onSaved }) {
     if (!amount || Number(amount) <= 0) { toast.error('أدخل مبلغاً صحيحاً'); return; }
     setSaving(true);
     try {
-      let result;
       if (isEdit) {
-        result = await paymentsAPI.updateInstallment(paymentId, installment._id, { amount: Number(amount), note: note || null });
+        await paymentsAPI.updateInstallment(paymentId, installment._id, { amount: Number(amount), note: note || null });
         toast.success('تم تعديل الدفعة');
       } else {
-        result = await paymentsAPI.addInstallment(paymentId, { amount: Number(amount), note: note || null });
+        await paymentsAPI.addInstallment(paymentId, { amount: Number(amount), note: note || null });
         toast.success('تم تسجيل الدفعة ✓');
       }
-      // نمرر البيانات المحدثة لـ onSaved عشان نعمل local state update بدون reload
-      onSaved(result?.data?.data);
+      onSaved();
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشلت العملية');
     } finally { setSaving(false); }
@@ -157,10 +157,10 @@ function EditPeriodModal({ payment, onClose, onSaved }) {
       await paymentsAPI.updatePeriod(payment._id, name.trim());
       toast.success('تم تعديل اسم الفترة ✓');
       onSaved();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'فشل التعديل');
-    } finally {
-      setSaving(false);
+    } catch (err) { 
+      toast.error(err?.response?.data?.message || 'فشل التعديل'); 
+    } finally { 
+      setSaving(false); 
     }
   };
 
@@ -186,12 +186,13 @@ function EditPeriodModal({ payment, onClose, onSaved }) {
   );
 }
 
+
 // ── Student Payment Card ──────────────────────────────────────────────────────
-function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment, onSaveInstallment }) {
+function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment }) {
   const { student, totalRequired, totalPaid, totalRemaining, months } = studentData;
   const [instModal,   setInstModal]   = useState(null);
   const [createModal, setCreateModal] = useState(false);
-  const [editPeriod,  setEditPeriod]  = useState(null);
+  const [editPeriod,  setEditPeriod]  = useState(null); // payment object to rename
 
   const isPaid = totalRemaining === 0 && totalRequired > 0;
 
@@ -200,6 +201,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
     try {
       await paymentsAPI.deleteInstallment(paymentId, instId);
       toast.success('تم حذف الدفعة');
+      // Update local state only — no full reload, no scroll reset
       onDeleteInstallment(student._id, paymentId, instId);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشل الحذف');
@@ -210,6 +212,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
     <AccordionItem value={student._id} className="bg-card border rounded-xl overflow-hidden shadow-sm mb-3">
       <AccordionTrigger className="px-4 sm:px-5 py-4 hover:no-underline hover:bg-muted/30">
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full pr-2">
+          {/* Name + status icon */}
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center ${
               isPaid ? 'bg-green-100' : totalRemaining > 0 ? 'bg-red-100' : 'bg-muted'
@@ -226,6 +229,8 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
               <p className="text-xs font-mono text-muted-foreground">{student.codePlain}</p>
             </div>
           </div>
+
+          {/* Summary pills */}
           <div className="flex gap-2 shrink-0">
             <div className="text-center bg-muted/60 rounded-lg px-3 py-1.5 min-w-[64px]">
               <p className="text-[10px] text-muted-foreground leading-none mb-0.5">المطلوب</p>
@@ -265,6 +270,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
                 const paidPct = payment.requiredAmount > 0 ? Math.min(100, Math.round(payment.paidAmount / payment.requiredAmount * 100)) : 0;
                 return (
                   <div key={payment._id} className="bg-background border rounded-xl overflow-hidden">
+                    {/* Month header */}
                     <div className="px-4 py-3 bg-muted/30 border-b">
                       <div className="flex items-center justify-between gap-2">
                         <span className="font-bold text-sm">{payment.month}</span>
@@ -293,6 +299,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
                           </Button>
                         </div>
                       </div>
+                      {/* Progress bar */}
                       <div className="mt-2 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
                           className={`h-full rounded-full transition-all ${paidPct === 100 ? 'bg-green-500' : 'bg-primary'}`}
@@ -301,6 +308,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
                       </div>
                     </div>
 
+                    {/* Installments */}
                     {payment.installments?.length > 0 ? (
                       <table className="w-full text-sm text-right">
                         <thead className="bg-muted/20 text-xs text-muted-foreground">
@@ -351,10 +359,7 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
           paymentId={instModal.paymentId}
           installment={instModal.installment}
           onClose={() => setInstModal(null)}
-          onSaved={(data) => {
-            setInstModal(null);
-            onSaveInstallment(student._id, instModal.paymentId, data);
-          }}
+          onSaved={() => { setInstModal(null); onRefresh(); }}
         />
       )}
       {createModal && (
@@ -402,7 +407,7 @@ export default function PaymentsPage() {
     finally { setLoading(false); }
   };
 
-  // ── Optimistic delete: يحذف الدفعة من الـ state بدون reload ──────────────
+  // Optimistic local delete — removes the installment from state without reload
   const handleDeleteInstallment = (studentId, paymentId, instId) => {
     setPayments(prev => {
       const students = prev.students.map(s => {
@@ -410,40 +415,10 @@ export default function PaymentsPage() {
         const months = s.months.map(p => {
           if (p._id !== paymentId) return p;
           const installments = (p.installments || []).filter(i => i._id !== instId);
-          const paidAmount = installments.reduce((sum, i) => sum + (i.amount || 0), 0);
-          return { ...p, installments, paidAmount, totalPaid: paidAmount };
+          const totalPaidMonth = installments.reduce((sum, i) => sum + (i.amount || 0), 0);
+          return { ...p, installments, totalPaid: totalPaidMonth };
         });
-        const totalPaid = months.reduce((sum, p) => sum + (p.paidAmount || p.totalPaid || 0), 0);
-        const totalRemaining = Math.max(0, s.totalRequired - totalPaid);
-        return { ...s, months, totalPaid, totalRemaining };
-      });
-      return { ...prev, students };
-    });
-  };
-
-  // ── Optimistic save: يضيف أو يعدّل دفعة في الـ state بدون reload ──────────
-  const handleSaveInstallment = (studentId, paymentId, savedData) => {
-    // لو الـ API ما رجعش بيانات كافية → fallback للـ reload
-    if (!savedData?.payment) { load(); return; }
-
-    const updatedPayment = savedData.payment;
-    const newInstallments = updatedPayment.installments || [];
-    const newPaidAmount = updatedPayment.paidAmount ||
-      newInstallments.reduce((sum, i) => sum + (i.amount || 0), 0);
-
-    setPayments(prev => {
-      const students = prev.students.map(s => {
-        if (s.student._id !== studentId) return s;
-        const months = s.months.map(p => {
-          if (p._id !== paymentId) return p;
-          return {
-            ...p,
-            installments: newInstallments,
-            paidAmount:   newPaidAmount,
-            totalPaid:    newPaidAmount,
-          };
-        });
-        const totalPaid = months.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+        const totalPaid = months.reduce((sum, p) => sum + p.totalPaid, 0);
         const totalRemaining = Math.max(0, s.totalRequired - totalPaid);
         return { ...s, months, totalPaid, totalRemaining };
       });
@@ -454,8 +429,11 @@ export default function PaymentsPage() {
   useEffect(() => { if (selectedYear) load(); }, [selectedYear, selectedGroup]);
 
   const { students = [], summary = {} } = payments;
+
   const selectedGroupData = groups.find(g => g._id === selectedGroup);
   const groupMonthlyFee = selectedGroupData?.monthlyFee || 0;
+
+  // Derived stats
   const paidCount    = students.filter(s => s.totalRemaining === 0 && s.totalRequired > 0).length;
   const pendingCount = students.filter(s => s.totalRemaining > 0).length;
 
@@ -463,11 +441,13 @@ export default function PaymentsPage() {
     <>
       <Helmet><title>المدفوعات | نظام المعلم</title></Helmet>
       <div className="p-4 sm:p-6 max-w-5xl mx-auto space-y-5">
+        {/* Header */}
         <div className="bg-card p-5 rounded-2xl border shadow-sm">
           <h2 className="text-2xl font-extrabold mb-0.5">المدفوعات والأقساط</h2>
           <p className="text-muted-foreground text-sm">تتبع مدفوعات الطلاب وإدارة الأقساط الشهرية</p>
         </div>
 
+        {/* Filters */}
         <Card className="border shadow-sm">
           <CardContent className="p-4 sm:p-5">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -500,6 +480,8 @@ export default function PaymentsPage() {
                 </Select>
               </div>
             </div>
+
+            {/* Group fee info banner */}
             {selectedGroupData && groupMonthlyFee > 0 && (
               <div className="mt-3 flex items-center gap-2 bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5">
                 <Wallet className="h-4 w-4 text-primary shrink-0" />
@@ -528,6 +510,7 @@ export default function PaymentsPage() {
 
         {!loading && !error && selectedYear && (
           <>
+            {/* Summary cards */}
             {(summary.totalStudents > 0 || students.length > 0) && (
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <Card className="border-0 shadow-sm bg-gradient-to-br from-muted/60 to-muted/30">
@@ -573,18 +556,20 @@ export default function PaymentsPage() {
                 <p className="text-muted-foreground font-medium">لا يوجد طلاب في هذه المجموعة</p>
               </div>
             ) : (
-              <Accordion type="multiple" defaultValue={students.map(s => s.student._id)}>
-                {students.map(s => (
-                  <StudentPaymentCard
-                    key={s.student._id}
-                    studentData={s}
-                    groupMonthlyFee={groupMonthlyFee}
-                    onRefresh={load}
-                    onDeleteInstallment={handleDeleteInstallment}
-                    onSaveInstallment={handleSaveInstallment}
-                  />
-                ))}
-              </Accordion>
+              <>
+                {/* Filter tabs: All / Pending / Paid */}
+                <Accordion type="multiple" defaultValue={students.map(s => s.student._id)}>
+                  {students.map(s => (
+                    <StudentPaymentCard
+                      key={s.student._id}
+                      studentData={s}
+                      groupMonthlyFee={groupMonthlyFee}
+                      onRefresh={load}
+                      onDeleteInstallment={handleDeleteInstallment}
+                    />
+                  ))}
+                </Accordion>
+              </>
             )}
           </>
         )}
