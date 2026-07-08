@@ -88,9 +88,9 @@ function CreatePaymentModal({ student, groupMonthlyFee, onClose, onSaved }) {
     if (!required || Number(required) <= 0) { toast.error('أدخل المبلغ المطلوب'); return; }
     setSaving(true);
     try {
-      await paymentsAPI.create({ studentId: student._id, month: period.trim(), requiredAmount: Number(required), groupId: student.group?._id });
+      const data = await paymentsAPI.create({ studentId: student._id, month: period.trim(), requiredAmount: Number(required), groupId: student.group?._id });
       toast.success('تم إنشاء السجل ✓');
-      onSaved();
+      onSaved(data.payment);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشلت العملية');
     } finally { setSaving(false); }
@@ -188,7 +188,7 @@ function EditPeriodModal({ payment, onClose, onSaved }) {
 
 
 // ── Student Payment Card ──────────────────────────────────────────────────────
-function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment }) {
+function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment, onAddMonth }) {
   const { student, totalRequired, totalPaid, totalRemaining, months } = studentData;
   const [instModal,   setInstModal]   = useState(null);
   const [createModal, setCreateModal] = useState(false);
@@ -367,7 +367,13 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
           student={student}
           groupMonthlyFee={groupMonthlyFee}
           onClose={() => setCreateModal(false)}
-          onSaved={() => { setCreateModal(false); onRefresh(); }}
+          onSaved={(payment) => {
+            setCreateModal(false);
+            // Update local state only — no full reload, no scroll/accordion reset
+            // (نفس سلوك حذف الدفعة بالظبط)
+            if (payment) onAddMonth(student._id, payment);
+            else onRefresh();
+          }}
         />
       )}
       {editPeriod && (
@@ -423,6 +429,29 @@ export default function PaymentsPage() {
         return { ...s, months, totalPaid, totalRemaining };
       });
       return { ...prev, students };
+    });
+  };
+
+  // Optimistic local add — appends the new month/payment record to state
+  // without a full reload (same behavior as delete: no refresh, no scroll reset)
+  const handleAddMonth = (studentId, payment) => {
+    setPayments(prev => {
+      const students = prev.students.map(s => {
+        if (s.student._id !== studentId) return s;
+        const months = [...s.months, payment];
+        const totalRequired = months.reduce((sum, p) => sum + (p.requiredAmount || 0), 0);
+        const totalPaid = months.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+        const totalRemaining = Math.max(0, totalRequired - totalPaid);
+        return { ...s, months, totalRequired, totalPaid, totalRemaining };
+      });
+      const summary = {
+        ...prev.summary,
+        totalRequired: students.reduce((s, r) => s + r.totalRequired, 0),
+        totalPaid:     students.reduce((s, r) => s + r.totalPaid, 0),
+        totalRemaining:students.reduce((s, r) => s + r.totalRemaining, 0),
+        fullyPaid:     students.filter(r => r.totalRemaining === 0 && r.totalRequired > 0).length,
+      };
+      return { ...prev, students, summary };
     });
   };
 
@@ -566,6 +595,7 @@ export default function PaymentsPage() {
                       groupMonthlyFee={groupMonthlyFee}
                       onRefresh={load}
                       onDeleteInstallment={handleDeleteInstallment}
+                      onAddMonth={handleAddMonth}
                     />
                   ))}
                 </Accordion>

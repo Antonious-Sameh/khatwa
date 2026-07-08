@@ -333,11 +333,22 @@ export default function StudentsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [sData, gData] = await Promise.all([
-        studentsAPI.getAll({ limit: 200 }),
-        groupsAPI.getAll(),
-      ]);
-      setStudents(sData.data || []);
+      // ملحوظة: الـ backend بيحدد أقصى limit للصفحة الواحدة (100)، فمينفعش
+      // نجيب كل الطلاب بطلب واحد لو عددهم أكبر من كده. عشان كده بنلف على
+      // كل الصفحات ونجمعها، عشان صفحة الطلاب تعرض كل الطلاب فعلاً
+      // (وده اللي كان بيسبب اختفاء الطالب الجديد لما يتخطى العدد الإجمالي الـ 100).
+      let allStudents = [];
+      let page = 1;
+      let totalPages = 1;
+      do {
+        const sData = await studentsAPI.getAll({ limit: 100, page });
+        allStudents = allStudents.concat(sData.data || []);
+        totalPages = sData.pagination?.pages || 1;
+        page += 1;
+      } while (page <= totalPages);
+
+      const gData = await groupsAPI.getAll();
+      setStudents(allStudents);
       setGroups(gData.groups || []);
     } catch {
       setError('فشل تحميل البيانات');
