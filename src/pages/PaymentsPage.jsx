@@ -35,14 +35,15 @@ function InstallmentModal({ paymentId, installment, onClose, onSaved }) {
     if (!amount || Number(amount) <= 0) { toast.error('أدخل مبلغاً صحيحاً'); return; }
     setSaving(true);
     try {
+      let data;
       if (isEdit) {
-        await paymentsAPI.updateInstallment(paymentId, installment._id, { amount: Number(amount), note: note || null });
+        data = await paymentsAPI.updateInstallment(paymentId, installment._id, { amount: Number(amount), note: note || null });
         toast.success('تم تعديل الدفعة');
       } else {
-        await paymentsAPI.addInstallment(paymentId, { amount: Number(amount), note: note || null });
+        data = await paymentsAPI.addInstallment(paymentId, { amount: Number(amount), note: note || null });
         toast.success('تم تسجيل الدفعة ✓');
       }
-      onSaved();
+      onSaved(data.payment);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشلت العملية');
     } finally { setSaving(false); }
@@ -188,7 +189,7 @@ function EditPeriodModal({ payment, onClose, onSaved }) {
 
 
 // ── Student Payment Card ──────────────────────────────────────────────────────
-function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment, onAddMonth }) {
+function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteInstallment, onAddMonth, onUpdateMonth }) {
   const { student, totalRequired, totalPaid, totalRemaining, months } = studentData;
   const [instModal,   setInstModal]   = useState(null);
   const [createModal, setCreateModal] = useState(false);
@@ -359,7 +360,13 @@ function StudentPaymentCard({ studentData, groupMonthlyFee, onRefresh, onDeleteI
           paymentId={instModal.paymentId}
           installment={instModal.installment}
           onClose={() => setInstModal(null)}
-          onSaved={() => { setInstModal(null); onRefresh(); }}
+          onSaved={(payment) => {
+            setInstModal(null);
+            // Update local state only — no full reload, no scroll/accordion reset
+            // (نفس سلوك حذف الشهر وإضافة الشهر بالظبط)
+            if (payment) onUpdateMonth(student._id, payment);
+            else onRefresh();
+          }}
         />
       )}
       {createModal && (
@@ -439,6 +446,30 @@ export default function PaymentsPage() {
       const students = prev.students.map(s => {
         if (s.student._id !== studentId) return s;
         const months = [...s.months, payment];
+        const totalRequired = months.reduce((sum, p) => sum + (p.requiredAmount || 0), 0);
+        const totalPaid = months.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
+        const totalRemaining = Math.max(0, totalRequired - totalPaid);
+        return { ...s, months, totalRequired, totalPaid, totalRemaining };
+      });
+      const summary = {
+        ...prev.summary,
+        totalRequired: students.reduce((s, r) => s + r.totalRequired, 0),
+        totalPaid:     students.reduce((s, r) => s + r.totalPaid, 0),
+        totalRemaining:students.reduce((s, r) => s + r.totalRemaining, 0),
+        fullyPaid:     students.filter(r => r.totalRemaining === 0 && r.totalRequired > 0).length,
+      };
+      return { ...prev, students, summary };
+    });
+  };
+
+  // Optimistic local update — replaces one month/payment record with the fresh
+  // version returned by the server after adding/editing an installment,
+  // without a full reload (same behavior as delete/add month: no refresh, no scroll reset)
+  const handleUpdateMonth = (studentId, payment) => {
+    setPayments(prev => {
+      const students = prev.students.map(s => {
+        if (s.student._id !== studentId) return s;
+        const months = s.months.map(p => (p._id === payment._id ? payment : p));
         const totalRequired = months.reduce((sum, p) => sum + (p.requiredAmount || 0), 0);
         const totalPaid = months.reduce((sum, p) => sum + (p.paidAmount || 0), 0);
         const totalRemaining = Math.max(0, totalRequired - totalPaid);
@@ -596,6 +627,7 @@ export default function PaymentsPage() {
                       onRefresh={load}
                       onDeleteInstallment={handleDeleteInstallment}
                       onAddMonth={handleAddMonth}
+                      onUpdateMonth={handleUpdateMonth}
                     />
                   ))}
                 </Accordion>
