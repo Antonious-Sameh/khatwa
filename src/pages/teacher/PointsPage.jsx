@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   Star, Plus, Minus, Loader2, Search, X, Save, Trophy,
-  ChevronUp, ChevronDown
+  ChevronUp, ChevronDown, Users
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Input }  from '@/components/ui/input';
 import { Label }  from '@/components/ui/label';
 import { Badge }  from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { pointsAPI, studentsAPI } from '@/api/services';
+import { pointsAPI, groupsAPI } from '@/api/services';
 import { toast } from 'sonner';
 
 const ACADEMIC_YEARS = [
@@ -90,20 +90,33 @@ function ActionPopover({ student, onDone }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function PointsPage() {
   const [year,     setYear]     = useState('');
-  const [students, setStudents] = useState([]); // raw student list
+  const [groups,        setGroups]        = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [group,    setGroup]    = useState('');
+  const [students, setStudents] = useState([]); // raw student list (of selected group)
   const [balances, setBalances] = useState({}); // studentId -> balance
   const [loading,  setLoading]  = useState(false);
   const [search,   setSearch]   = useState('');
   const [active,   setActive]   = useState(null); // studentId with open popover
 
-  // Load students + their balances when year changes
+  // Load groups when year changes
+  useEffect(() => {
+    if (!year) { setGroups([]); return; }
+    setLoadingGroups(true);
+    groupsAPI.getAll({ year, active: true })
+      .then(d => setGroups(d.groups || []))
+      .catch(() => toast.error('فشل تحميل المجموعات'))
+      .finally(() => setLoadingGroups(false));
+  }, [year]);
+
+  // Load students of the selected group + their balances
   const load = useCallback(async () => {
-    if (!year) return;
+    if (!group) return;
     setLoading(true);
     try {
-      // Get all students for this year
-      const sData = await studentsAPI.getAll({ year, limit: 500 });
-      const list  = sData.data || [];
+      // طلاب المجموعة المختارة فقط (نفس فكرة صفحة الحضور)
+      const gData = await groupsAPI.getStudents(group);
+      const list  = gData.students || [];
 
       // Get balances from points leaderboard
       const pData = await pointsAPI.getLeaderboard({ year, limit: 500 });
@@ -117,9 +130,22 @@ export default function PointsPage() {
       setBalances(bMap);
     } catch { toast.error('فشل تحميل البيانات'); }
     finally { setLoading(false); }
-  }, [year]);
+  }, [group, year]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleYearChange = (val) => {
+    setYear(val);
+    setGroup('');
+    setStudents([]);
+    setBalances({});
+    setSearch('');
+  };
+
+  const handleGroupChange = (val) => {
+    setGroup(val);
+    setSearch('');
+  };
 
   // Close popover on outside click
   useEffect(() => {
@@ -162,12 +188,12 @@ export default function PointsPage() {
           <div>
             <h2 className="text-2xl font-extrabold">النقاط</h2>
             <p className="text-muted-foreground text-sm mt-0.5">
-              {year && !loading
+              {group && !loading
                 ? `${filtered.length} طالب — ${withPoints} لديهم نقاط — إجمالي: ${totalPoints} نقطة`
-                : 'اختر المرحلة الدراسية'}
+                : 'اختر المرحلة الدراسية ثم المجموعة'}
             </p>
           </div>
-          {year && !loading && totalPoints > 0 && (
+          {group && !loading && totalPoints > 0 && (
             <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-2">
               <Trophy className="h-5 w-5 text-yellow-500"/>
               <span className="text-sm font-bold text-yellow-700">{totalPoints} نقطة إجمالي</span>
@@ -176,9 +202,9 @@ export default function PointsPage() {
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col sm:flex-row gap-3">
-          <Select value={year} onValueChange={v => { setYear(v); setStudents([]); setBalances({}); setSearch(''); }}>
-            <SelectTrigger className="h-11 sm:w-64">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Select value={year} onValueChange={handleYearChange}>
+            <SelectTrigger className="h-11">
               <SelectValue placeholder="اختر المرحلة الدراسية..."/>
             </SelectTrigger>
             <SelectContent>
@@ -186,29 +212,45 @@ export default function PointsPage() {
             </SelectContent>
           </Select>
 
-          {year && students.length > 0 && (
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
-              <Input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                placeholder="ابحث بالاسم أو الكود..."
-                className="h-11 pr-9 pl-8"
-              />
-              {search && (
-                <button onClick={() => setSearch('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                  <X className="h-4 w-4"/>
-                </button>
-              )}
-            </div>
-          )}
+          <Select value={group} onValueChange={handleGroupChange} disabled={!year || loadingGroups}>
+            <SelectTrigger className="h-11 disabled:opacity-50">
+              <SelectValue placeholder={loadingGroups ? 'جاري التحميل...' : 'اختر المجموعة...'}/>
+            </SelectTrigger>
+            <SelectContent>
+              {groups.map(g => <SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Empty state */}
+        {group && students.length > 0 && (
+          <div className="relative">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
+            <Input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="ابحث بالاسم أو الكود..."
+              className="h-11 pr-9 pl-8"
+            />
+            {search && (
+              <button onClick={() => setSearch('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                <X className="h-4 w-4"/>
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Empty states */}
         {!year && (
           <div className="text-center py-16 bg-card border rounded-2xl border-dashed">
             <Star className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
             <p className="text-muted-foreground font-medium">اختر المرحلة الدراسية لإدارة نقاط الطلاب</p>
+          </div>
+        )}
+
+        {year && !group && !loadingGroups && (
+          <div className="text-center py-16 bg-card border rounded-2xl border-dashed">
+            <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
+            <p className="text-muted-foreground font-medium">اختر المجموعة لعرض طلابها</p>
           </div>
         )}
 
@@ -295,17 +337,17 @@ export default function PointsPage() {
           </Card>
         )}
 
-        {!loading && year && students.length > 0 && filtered.length === 0 && (
+        {!loading && group && students.length > 0 && filtered.length === 0 && (
           <div className="text-center py-10 bg-card border rounded-2xl border-dashed">
             <Search className="h-8 w-8 text-muted-foreground mx-auto mb-2 opacity-30"/>
             <p className="text-muted-foreground text-sm">لا توجد نتائج للبحث عن "{search}"</p>
           </div>
         )}
 
-        {!loading && year && students.length === 0 && (
+        {!loading && group && students.length === 0 && (
           <div className="text-center py-14 bg-card border rounded-2xl border-dashed">
             <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-30"/>
-            <p className="text-muted-foreground">لا يوجد طلاب في هذه المرحلة</p>
+            <p className="text-muted-foreground">لا يوجد طلاب في هذه المجموعة</p>
           </div>
         )}
       </div>

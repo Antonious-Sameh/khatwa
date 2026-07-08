@@ -111,7 +111,24 @@ export default function NotesPage() {
   const [showDropdown,    setShowDropdown]    = useState(false);
 
   useEffect(() => {
-    studentsAPI.getAll({ limit:500 }).then(d=>setStudents(d.data||[])).catch(()=>{});
+    // ملحوظة: الـ backend بيحدد أقصى limit للصفحة الواحدة (100)، فمينفعش
+    // نجيب كل الطلاب بطلب واحد لو عددهم أكبر من كده. عشان كده بنلف على
+    // كل الصفحات ونجمعها، عشان البحث عن الطالب يشتغل على كل الطلاب فعلاً.
+    const loadAllStudents = async () => {
+      let list = [];
+      let page = 1;
+      let totalPages = 1;
+      try {
+        do {
+          const d = await studentsAPI.getAll({ limit: 100, page });
+          list = list.concat(d.data || []);
+          totalPages = d.pagination?.pages || 1;
+          page += 1;
+        } while (page <= totalPages);
+        setStudents(list);
+      } catch {}
+    };
+    loadAllStudents();
     loadNotes();
   }, []);
 

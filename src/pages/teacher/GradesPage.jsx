@@ -11,7 +11,7 @@ import { Label }  from '@/components/ui/label';
 import { Badge }  from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { gradesAPI } from '@/api/services';
+import { gradesAPI, groupsAPI } from '@/api/services';
 import api from '@/api/axios';
 import { toast } from 'sonner';
 
@@ -28,19 +28,33 @@ const ACADEMIC_YEARS = [
 // ══════════════════════════════════════════════════════
 function ElectronicGrades() {
   const [year,       setYear]       = useState('');
+  const [groups,        setGroups]        = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [group,      setGroup]      = useState('');
   const [exams,      setExams]      = useState([]);
   const [selectedEx, setSelectedEx] = useState('');
   const [sheet,      setSheet]      = useState(null);
   const [loading,    setLoading]    = useState(false);
   const [saving,     setSaving]     = useState(false);
 
+  // Load groups when year changes
   useEffect(() => {
-    if (!year) { setExams([]); return; }
+    if (!year) { setGroups([]); return; }
+    setLoadingGroups(true);
+    groupsAPI.getAll({ year, active: true })
+      .then(r => setGroups(r.groups || []))
+      .catch(() => {})
+      .finally(() => setLoadingGroups(false));
+  }, [year]);
+
+  // Load exams once year + group are chosen
+  useEffect(() => {
+    if (!year || !group) { setExams([]); return; }
     api.get('/exams', { params:{ year } })
       .then(r => setExams((r.data.data.exams||[]).filter(e=>(e.examType==='electronic'||!e.examType) && e.status!=='draft')))
       .catch(()=>{});
     setSelectedEx(''); setSheet(null);
-  }, [year]);
+  }, [year, group]);
 
   useEffect(() => {
     if (!selectedEx) { setSheet(null); return; }
@@ -51,16 +65,32 @@ function ElectronicGrades() {
       .finally(()=>setLoading(false));
   }, [selectedEx]);
 
+  const handleYearChange = (val) => { setYear(val); setGroup(''); setExams([]); setSelectedEx(''); setSheet(null); };
+  const handleGroupChange = (val) => { setGroup(val); setSelectedEx(''); setSheet(null); };
+
+  // اعرض طلاب المجموعة المختارة فقط
+  const groupRows = sheet?.sheet?.filter(row => row.student.group?._id === group) || [];
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1.5">
           <Label>السنة الدراسية</Label>
-          <Select value={year} onValueChange={setYear}>
+          <Select value={year} onValueChange={handleYearChange}>
             <SelectTrigger><SelectValue placeholder="اختر السنة..."/></SelectTrigger>
             <SelectContent>{ACADEMIC_YEARS.map(y=><SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>)}</SelectContent>
           </Select>
         </div>
+        <div className="space-y-1.5">
+          <Label>المجموعة</Label>
+          <Select value={group} onValueChange={handleGroupChange} disabled={!year || loadingGroups}>
+            <SelectTrigger className="disabled:opacity-50"><SelectValue placeholder={loadingGroups?'جاري التحميل...':'اختر المجموعة...'}/></SelectTrigger>
+            <SelectContent>{groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}</SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {group && (
         <div className="space-y-1.5">
           <Label>الامتحان</Label>
           <Select value={selectedEx} onValueChange={setSelectedEx} disabled={!exams.length}>
@@ -68,7 +98,21 @@ function ElectronicGrades() {
             <SelectContent>{exams.map(e=><SelectItem key={e._id} value={e._id}>{e.title}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-      </div>
+      )}
+
+      {!year && (
+        <div className="text-center py-14 border-2 border-dashed rounded-2xl">
+          <Monitor className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
+          <p className="text-muted-foreground font-medium">اختر السنة الدراسية</p>
+        </div>
+      )}
+
+      {year && !group && !loadingGroups && (
+        <div className="text-center py-14 border-2 border-dashed rounded-2xl">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
+          <p className="text-muted-foreground font-medium">اختر المجموعة لعرض طلابها</p>
+        </div>
+      )}
 
       {loading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary"/></div>}
 
@@ -77,7 +121,7 @@ function ElectronicGrades() {
           <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-3 flex-wrap">
             <span className="font-bold">{sheet.exam?.title}</span>
             <Badge variant="secondary">الدرجة الكلية: {sheet.exam?.maxScore}</Badge>
-            <Badge variant="outline">{sheet.summary?.entered||0} من {sheet.summary?.total||0} أُدخلت</Badge>
+            <Badge variant="outline">{groupRows.filter(r=>r.entered).length} من {groupRows.length} أُدخلت</Badge>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-right">
@@ -92,7 +136,7 @@ function ElectronicGrades() {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {sheet.sheet?.map((row,i)=>{
+                {groupRows.map((row,i)=>{
                   const pct = row.pct ?? (row.entered && sheet.exam?.maxScore>0 ? Math.round((row.score/sheet.exam.maxScore)*100) : null);
                   const dateStr = row.submittedAt
                     ? new Date(row.submittedAt).toLocaleDateString('ar-EG', {day:'2-digit',month:'2-digit',year:'numeric'})
@@ -188,7 +232,7 @@ function CreatePaperExamModal({ onClose, onSaved }) {
   );
 }
 
-function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
+function PaperExamSheet({ title, year, group, maxScore, onBack, onDeleted }) {
   const [sheet,   setSheet]   = useState([]);
   const [scores,  setScores]  = useState({});
   const [loading, setLoading] = useState(true);
@@ -206,10 +250,13 @@ function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
 
   useEffect(() => { load(); }, [load]);
 
+  // اعرض طلاب المجموعة المختارة فقط
+  const groupSheet = sheet.filter(row => row.student.group?._id === group);
+
   const handleSaveAll = async () => {
     setSaving(true);
     try {
-      const grades = sheet.map(row => ({ studentId:row.student._id, score: scores[row.student._id] ?? 0 }));
+      const grades = groupSheet.map(row => ({ studentId:row.student._id, score: scores[row.student._id] ?? 0 }));
       await api.post('/grades/paper-exam-bulk', { title, maxScore, academicYear:year, grades });
       toast.success('تم حفظ الدرجات ✓');
       load();
@@ -226,8 +273,7 @@ function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
     } catch { toast.error('فشل الحذف'); }
   };
 
-  const entered   = Object.keys(scores).length;
-  const filled    = Object.values(scores).filter(v=>v!==''&&v!==undefined).length;
+  const filled = Object.entries(scores).filter(([sid,v]) => groupSheet.some(r=>r.student._id===sid) && v!==''&&v!==undefined).length;
 
   return (
     <div className="space-y-4">
@@ -241,7 +287,7 @@ function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
           <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive gap-1.5" onClick={handleDelete}><Trash2 className="h-4 w-4"/>حذف</Button>
           <Button className="gap-2" onClick={handleSaveAll} disabled={saving}>
             {saving?<Loader2 className="h-4 w-4 animate-spin"/>:<Save className="h-4 w-4"/>}
-            {saving?'جاري الحفظ...':`حفظ (${filled}/${sheet.length})`}
+            {saving?'جاري الحفظ...':`حفظ (${filled}/${groupSheet.length})`}
           </Button>
         </div>
       </div>
@@ -259,7 +305,7 @@ function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
                 </tr>
               </thead>
               <tbody className="divide-y">
-                {sheet.map((row,i)=>{
+                {groupSheet.map((row,i)=>{
                   const val = scores[row.student._id];
                   const pct = val!==undefined&&val!==''&&maxScore>0 ? Math.round((Number(val)/maxScore)*100) : null;
                   return (
@@ -291,25 +337,41 @@ function PaperExamSheet({ title, year, maxScore, onBack, onDeleted }) {
 
 function PaperGrades() {
   const [year,       setYear]       = useState('');
+  const [groups,        setGroups]        = useState([]);
+  const [loadingGroups, setLoadingGroups] = useState(false);
+  const [group,      setGroup]      = useState('');
   const [paperExams, setPaperExams] = useState([]);
   const [loading,    setLoading]    = useState(false);
   const [modal,      setModal]      = useState(false);
   const [viewing,    setViewing]    = useState(null);
 
+  // Load groups when year changes
+  useEffect(() => {
+    if (!year) { setGroups([]); return; }
+    setLoadingGroups(true);
+    groupsAPI.getAll({ year, active: true })
+      .then(r => setGroups(r.groups || []))
+      .catch(() => {})
+      .finally(() => setLoadingGroups(false));
+  }, [year]);
+
   const load = useCallback(async () => {
-    if (!year) return;
+    if (!year || !group) return;
     setLoading(true);
     api.get(`/grades/paper-exams?year=${year}`)
       .then(r => setPaperExams(r.data.data.paperExams||[]))
       .catch(()=>toast.error('فشل تحميل الامتحانات الورقية'))
       .finally(()=>setLoading(false));
-  }, [year]);
+  }, [year, group]);
 
   useEffect(() => { load(); }, [load]);
 
+  const handleYearChange = (val) => { setYear(val); setGroup(''); setPaperExams([]); };
+  const handleGroupChange = (val) => { setGroup(val); setPaperExams([]); };
+
   if (viewing) return (
     <PaperExamSheet
-      title={viewing._id} year={year} maxScore={viewing.maxScore}
+      title={viewing._id} year={year} group={group} maxScore={viewing.maxScore}
       onBack={()=>setViewing(null)} onDeleted={()=>{setViewing(null);load();}}
     />
   );
@@ -317,25 +379,43 @@ function PaperGrades() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex-1 min-w-0">
-          <Select value={year} onValueChange={v=>{setYear(v);setPaperExams([]);}}>
-            <SelectTrigger className="w-52"><SelectValue placeholder="اختر السنة الدراسية..."/></SelectTrigger>
+        <div className="flex-1 min-w-0 grid grid-cols-2 gap-3">
+          <Select value={year} onValueChange={handleYearChange}>
+            <SelectTrigger><SelectValue placeholder="اختر السنة الدراسية..."/></SelectTrigger>
             <SelectContent>{ACADEMIC_YEARS.map(y=><SelectItem key={y.value} value={y.value}>{y.label}</SelectItem>)}</SelectContent>
+          </Select>
+          <Select value={group} onValueChange={handleGroupChange} disabled={!year || loadingGroups}>
+            <SelectTrigger className="disabled:opacity-50"><SelectValue placeholder={loadingGroups?'جاري التحميل...':'اختر المجموعة...'}/></SelectTrigger>
+            <SelectContent>{groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}</SelectContent>
           </Select>
         </div>
         <Button className="gap-2" onClick={()=>setModal(true)}><Plus className="h-4 w-4"/>امتحان ورقي جديد</Button>
       </div>
 
+      {!year && (
+        <div className="text-center py-14 border-2 border-dashed rounded-2xl">
+          <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
+          <p className="text-muted-foreground font-medium">اختر السنة الدراسية</p>
+        </div>
+      )}
+
+      {year && !group && !loadingGroups && (
+        <div className="text-center py-14 border-2 border-dashed rounded-2xl">
+          <Users className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
+          <p className="text-muted-foreground font-medium">اختر المجموعة لعرض طلابها</p>
+        </div>
+      )}
+
       {loading && <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary"/></div>}
 
-      {!loading && year && paperExams.length===0 && (
+      {!loading && group && paperExams.length===0 && (
         <div className="text-center py-14 border-2 border-dashed rounded-2xl">
           <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-30"/>
           <p className="text-muted-foreground font-medium">لا توجد امتحانات ورقية لهذه المرحلة</p>
         </div>
       )}
 
-      {!loading && paperExams.length>0 && (
+      {!loading && group && paperExams.length>0 && (
         <div className="space-y-2">
           {paperExams.map(ex=>(
             <div key={ex._id} className="bg-card border rounded-xl p-4 flex items-center gap-4 hover:shadow-sm cursor-pointer" onClick={()=>setViewing(ex)}>
