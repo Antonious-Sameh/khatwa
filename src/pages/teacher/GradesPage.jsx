@@ -23,6 +23,8 @@ const ACADEMIC_YEARS = [
   { value:'second-sec',  label:'الصف الثاني الثانوي'  },
 ];
 
+const ALL_GROUPS = '__all__';
+
 // ══════════════════════════════════════════════════════
 // ELECTRONIC EXAMS TAB
 // ══════════════════════════════════════════════════════
@@ -68,8 +70,10 @@ function ElectronicGrades() {
   const handleYearChange = (val) => { setYear(val); setGroup(''); setExams([]); setSelectedEx(''); setSheet(null); };
   const handleGroupChange = (val) => { setGroup(val); setSelectedEx(''); setSheet(null); };
 
-  // اعرض طلاب المجموعة المختارة فقط
-  const groupRows = sheet?.sheet?.filter(row => row.student.group?._id === group) || [];
+  // اعرض طلاب المجموعة المختارة، أو كل الطلاب لو "كل المجموعات"
+  const groupRows = group === ALL_GROUPS
+    ? (sheet?.sheet || [])
+    : (sheet?.sheet?.filter(row => row.student.group?._id === group) || []);
 
   return (
     <div className="space-y-4">
@@ -85,7 +89,10 @@ function ElectronicGrades() {
           <Label>المجموعة</Label>
           <Select value={group} onValueChange={handleGroupChange} disabled={!year || loadingGroups}>
             <SelectTrigger className="disabled:opacity-50"><SelectValue placeholder={loadingGroups?'جاري التحميل...':'اختر المجموعة...'}/></SelectTrigger>
-            <SelectContent>{groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              <SelectItem value={ALL_GROUPS}>كل المجموعات</SelectItem>
+              {groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
       </div>
@@ -250,8 +257,8 @@ function PaperExamSheet({ title, year, group, maxScore, onBack, onDeleted }) {
 
   useEffect(() => { load(); }, [load]);
 
-  // اعرض طلاب المجموعة المختارة فقط
-  const groupSheet = sheet.filter(row => row.student.group?._id === group);
+  // اعرض طلاب المجموعة المختارة، أو كل الطلاب لو "كل المجموعات"
+  const groupSheet = group === ALL_GROUPS ? sheet : sheet.filter(row => row.student.group?._id === group);
 
   const handleSaveAll = async () => {
     setSaving(true);
@@ -386,7 +393,10 @@ function PaperGrades() {
           </Select>
           <Select value={group} onValueChange={handleGroupChange} disabled={!year || loadingGroups}>
             <SelectTrigger className="disabled:opacity-50"><SelectValue placeholder={loadingGroups?'جاري التحميل...':'اختر المجموعة...'}/></SelectTrigger>
-            <SelectContent>{groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}</SelectContent>
+            <SelectContent>
+              <SelectItem value={ALL_GROUPS}>كل المجموعات</SelectItem>
+              {groups.map(g=><SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         <Button className="gap-2" onClick={()=>setModal(true)}><Plus className="h-4 w-4"/>امتحان ورقي جديد</Button>

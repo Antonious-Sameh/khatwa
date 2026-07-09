@@ -10,8 +10,10 @@ import { Input }  from '@/components/ui/input';
 import { Label }  from '@/components/ui/label';
 import { Badge }  from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { pointsAPI, groupsAPI } from '@/api/services';
+import { pointsAPI, groupsAPI, studentsAPI } from '@/api/services';
 import { toast } from 'sonner';
+
+const ALL_GROUPS = '__all__';
 
 const ACADEMIC_YEARS = [
   { value:'first-prep',  label:'الصف الأول الإعدادي'  },
@@ -109,14 +111,29 @@ export default function PointsPage() {
       .finally(() => setLoadingGroups(false));
   }, [year]);
 
-  // Load students of the selected group + their balances
+  // Load students of the selected group (or all groups) + their balances
   const load = useCallback(async () => {
     if (!group) return;
     setLoading(true);
     try {
-      // طلاب المجموعة المختارة فقط (نفس فكرة صفحة الحضور)
-      const gData = await groupsAPI.getStudents(group);
-      const list  = gData.students || [];
+      let list;
+      if (group === ALL_GROUPS) {
+        // كل المجموعات التابعة للمرحلة الدراسية — بنلف على كل الصفحات عشان
+        // نتجاوز حد الـ backend الأقصى للصفحة الواحدة (100)
+        list = [];
+        let page = 1;
+        let totalPages = 1;
+        do {
+          const sData = await studentsAPI.getAll({ year, limit: 100, page });
+          list = list.concat(sData.data || []);
+          totalPages = sData.pagination?.pages || 1;
+          page += 1;
+        } while (page <= totalPages);
+      } else {
+        // طلاب المجموعة المختارة فقط (نفس فكرة صفحة الحضور)
+        const gData = await groupsAPI.getStudents(group);
+        list = gData.students || [];
+      }
 
       // Get balances from points leaderboard
       const pData = await pointsAPI.getLeaderboard({ year, limit: 500 });
@@ -217,6 +234,7 @@ export default function PointsPage() {
               <SelectValue placeholder={loadingGroups ? 'جاري التحميل...' : 'اختر المجموعة...'}/>
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value={ALL_GROUPS}>كل المجموعات</SelectItem>
               {groups.map(g => <SelectItem key={g._id} value={g._id}>{g.name}</SelectItem>)}
             </SelectContent>
           </Select>
@@ -347,7 +365,7 @@ export default function PointsPage() {
         {!loading && group && students.length === 0 && (
           <div className="text-center py-14 bg-card border rounded-2xl border-dashed">
             <Star className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-30"/>
-            <p className="text-muted-foreground">لا يوجد طلاب في هذه المجموعة</p>
+            <p className="text-muted-foreground">{group === ALL_GROUPS ? 'لا يوجد طلاب في هذه المرحلة' : 'لا يوجد طلاب في هذه المجموعة'}</p>
           </div>
         )}
       </div>
