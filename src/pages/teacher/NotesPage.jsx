@@ -78,7 +78,7 @@ function NoteCard({ note, onDelete, yearLabel }) {
       <div className="flex-1 min-w-0 space-y-2">
         <p className="text-sm leading-relaxed">{note.text}</p>
         {note.imageUrl && (
-          <img src={note.imageUrl} alt="صورة الملاحظة" className="max-h-40 rounded-xl border object-contain bg-muted"/>
+          <img src={note.imageUrl} alt="صورة الملاحظة" loading="lazy" className="max-h-40 rounded-xl border object-contain bg-muted"/>
         )}
         <div className="flex items-center gap-2 flex-wrap">
           {yearLabel && <Badge variant="outline" className="text-xs">{yearLabel}</Badge>}

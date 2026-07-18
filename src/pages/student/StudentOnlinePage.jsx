@@ -168,6 +168,40 @@ function PdfViewer({ url, name }) {
   );
 }
 
+// Non-video items don't depend on watchPct, so memoize them to avoid
+// re-rendering every second while a video's progress ticks (only the video
+// item itself needs to re-render on each progress update).
+const NonVideoItem = React.memo(function NonVideoItem({ item }) {
+  return (
+    <>
+      {/* Image item */}
+      {item.type === 'image' && (
+        <figure className="space-y-2">
+          <img src={item.imageUrl} alt={item.imageCaption||''} loading="lazy" className="w-full rounded-2xl border object-contain bg-muted max-h-96"/>
+          {item.imageCaption && <figcaption className="text-center text-sm text-muted-foreground italic">{item.imageCaption}</figcaption>}
+        </figure>
+      )}
+
+      {/* PDF item — inline viewer */}
+      {item.type === 'pdf' && (
+        <PdfViewer url={item.pdfUrl} name={item.pdfName}/>
+      )}
+
+      {/* Article item */}
+      {item.type === 'article' && (
+        <div className="bg-card border rounded-2xl p-5 sm:p-6 space-y-3">
+          {item.title && (
+            <h3 className="text-lg font-extrabold border-r-4 border-primary pr-3">{item.title}</h3>
+          )}
+          <div className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+            {item.body}
+          </div>
+        </div>
+      )}
+    </>
+  );
+});
+
 // ══════════════════════════════════════════════════════════════════════════════
 // LESSON DETAIL — shows all items in order
 // ══════════════════════════════════════════════════════════════════════════════
@@ -264,30 +298,8 @@ function LessonDetail({ lesson: initLesson, watchLog, onBack, onCompleted }) {
                   </div>
                 )}
 
-                {/* Image item */}
-                {item.type === 'image' && (
-                  <figure className="space-y-2">
-                    <img src={item.imageUrl} alt={item.imageCaption||''} className="w-full rounded-2xl border object-contain bg-muted max-h-96"/>
-                    {item.imageCaption && <figcaption className="text-center text-sm text-muted-foreground italic">{item.imageCaption}</figcaption>}
-                  </figure>
-                )}
-
-                {/* PDF item — inline viewer */}
-                {item.type === 'pdf' && (
-                  <PdfViewer url={item.pdfUrl} name={item.pdfName}/>
-                )}
-
-                {/* Article item */}
-                {item.type === 'article' && (
-                  <div className="bg-card border rounded-2xl p-5 sm:p-6 space-y-3">
-                    {item.title && (
-                      <h3 className="text-lg font-extrabold border-r-4 border-primary pr-3">{item.title}</h3>
-                    )}
-                    <div className="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-                      {item.body}
-                    </div>
-                  </div>
-                )}
+                {/* Image / PDF / Article items — memoized, unaffected by watchPct ticks */}
+                <NonVideoItem item={item} />
 
                 {/* Divider between items */}
                 {idx < sortedItems.length - 1 && <hr className="border-border/50"/>}

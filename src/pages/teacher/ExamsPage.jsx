@@ -642,7 +642,7 @@ export default function ExamsPage() {
                             <div key={i} className="flex items-start gap-2 text-sm bg-background rounded-lg px-3 py-2">
                               <span className="text-muted-foreground shrink-0 w-5 text-xs mt-0.5">{i+1}.</span>
                               <div className="flex-1 min-w-0">
-                                {q.imageUrl && <img src={q.imageUrl} alt="" className="h-12 rounded mb-1 object-contain bg-white border"/>}
+                                {q.imageUrl && <img src={q.imageUrl} alt="" loading="lazy" className="h-12 rounded mb-1 object-contain bg-white border"/>}
                                 <p className="font-medium leading-snug">{q.text}</p>
                                 <p className="text-xs text-muted-foreground mt-0.5">
                                   {q.type==='truefalse'?'صح/خطأ':`MCQ · ${q.options.filter(Boolean).length} خيارات`}

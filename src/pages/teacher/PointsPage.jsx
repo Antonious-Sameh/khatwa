@@ -192,8 +192,11 @@ export default function PointsPage() {
     );
   }, [students, balances, search]);
 
-  const totalPoints  = Object.values(balances).reduce((s, b) => s + (b > 0 ? b : 0), 0);
-  const withPoints   = filtered.filter(s => s.balance > 0).length;
+  const totalPoints = useMemo(
+    () => Object.values(balances).reduce((s, b) => s + (b > 0 ? b : 0), 0),
+    [balances]
+  );
+  const withPoints  = useMemo(() => filtered.filter(s => s.balance > 0).length, [filtered]);
 
   return (
     <>

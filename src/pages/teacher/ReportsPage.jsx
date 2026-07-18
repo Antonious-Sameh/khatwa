@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
 import { Search, User, Activity, CreditCard, Award, Trophy, Star, BarChart2, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,17 +22,31 @@ export default function ReportsPage() {
   const [report,  setReport]  = useState(null);
   const [loading, setLoading] = useState(false);
   const [searching, setSearching] = useState(false);
+  const debounceRef = useRef(null);
+  const searchSeq   = useRef(0);
 
-  const handleSearch = async (q) => {
-    setQuery(q);
-    setReport(null);
-    if (q.trim().length < 2) { setResults([]); return; }
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
+
+  const runSearch = async (q, seq) => {
     setSearching(true);
     try {
       const d = await studentsAPI.getAll({ search: q.trim(), limit: 10 });
-      setResults(d.data || []);
-    } catch { setResults([]); }
-    finally { setSearching(false); }
+      if (seq === searchSeq.current) setResults(d.data || []);
+    } catch {
+      if (seq === searchSeq.current) setResults([]);
+    } finally {
+      if (seq === searchSeq.current) setSearching(false);
+    }
+  };
+
+  const handleSearch = (q) => {
+    setQuery(q);
+    setReport(null);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (q.trim().length < 2) { setResults([]); searchSeq.current += 1; return; }
+    const seq = (searchSeq.current += 1);
+    // تأخير بسيط (debounce) قبل إرسال الطلب — بدل ما نبعت request مع كل حرف
+    debounceRef.current = setTimeout(() => runSearch(q, seq), 350);
   };
 
   const selectStudent = async (student) => {

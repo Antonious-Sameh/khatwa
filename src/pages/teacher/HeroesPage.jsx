@@ -182,7 +182,7 @@ function AlbumView({ album, onBack, onUpdated }) {
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
           {data.photos.map(photo => (
             <div key={photo._id} className="group relative rounded-xl overflow-hidden border bg-muted aspect-square">
-              <img src={photo.url} alt={photo.caption || ''} className="w-full h-full object-cover" />
+              <img src={photo.url} alt={photo.caption || ''} loading="lazy" className="w-full h-full object-cover" />
               {photo.caption && (
                 <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs px-2 py-1 text-center truncate">
                   {photo.caption}
@@ -268,7 +268,7 @@ export default function HeroesPage() {
               <Card key={album._id} className="border shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer group" onClick={() => setViewing(album)}>
                 <div className="aspect-video bg-muted relative overflow-hidden">
                   {album.coverUrl ? (
-                    <img src={album.coverUrl} alt={album.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                    <img src={album.coverUrl} alt={album.title} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5">
                       <FolderOpen className="h-12 w-12 text-primary/30" />

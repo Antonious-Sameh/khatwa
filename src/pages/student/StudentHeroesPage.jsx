@@ -55,6 +55,7 @@ function AlbumView({ album, onBack }) {
               <img 
                 src={photo.url} 
                 alt={photo.caption || ''} 
+                loading="lazy"
                 className="w-full object-cover group-hover:scale-[1.03] transition-transform duration-500 rounded-2xl" 
               />
               
@@ -176,6 +177,7 @@ export default function StudentHeroesPage() {
                     <img 
                       src={album.coverUrl} 
                       alt={album.title} 
+                      loading="lazy"
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                     />
                   ) : (
