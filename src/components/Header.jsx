@@ -22,6 +22,25 @@ const PAGE_TITLES = {
   '/student/heroes':'أبطال مروا من هنا','/student/account':'الحساب',
 };
 
+// Teacher info rarely changes during a session, but Header remounts on every
+// page navigation (each route independently wraps ProtectedLayout). Cache the
+// result in module scope so we fetch it once per session instead of once per
+// page visit.
+let teacherInfoCache = null;
+let teacherInfoPromise = null;
+const fetchTeacherInfo = () => {
+  if (teacherInfoCache) return Promise.resolve(teacherInfoCache);
+  if (!teacherInfoPromise) {
+    teacherInfoPromise = api.get('/account/teacher-info')
+      .then(r => {
+        teacherInfoCache = r.data.data.teacher || null;
+        return teacherInfoCache;
+      })
+      .catch(() => { teacherInfoPromise = null; return null; });
+  }
+  return teacherInfoPromise;
+};
+
 // Avatar component — shows image or initials
 function UserAvatar({ name, avatarUrl, size = 'md' }) {
   const sz       = size === 'md' ? 'h-9 w-9 text-sm' : 'h-8 w-8 text-xs';
@@ -48,10 +67,13 @@ export default function Header({ onMenuClick }) {
   const [teacherName,   setTeacherName]   = useState(null);
   useEffect(() => {
     if (user?.role !== 'student') return;
-    api.get('/account/teacher-info').then(r => {
-      setTeacherAvatar(r.data.data.teacher?.avatar || null);
-      setTeacherName(r.data.data.teacher?.name   || null);
-    }).catch(() => {});
+    let cancelled = false;
+    fetchTeacherInfo().then(teacher => {
+      if (cancelled) return;
+      setTeacherAvatar(teacher?.avatar || null);
+      setTeacherName(teacher?.name   || null);
+    });
+    return () => { cancelled = true; };
   }, [user?.role]);
 
   const handleLogout = () => { logout(); navigate('/login'); };

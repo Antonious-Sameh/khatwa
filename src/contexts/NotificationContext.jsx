@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext.jsx';
-import { studentAPI } from '@/api/services';
+import { notesAPI } from '@/api/services';
 
 const NotificationContext = createContext({ unreadCount: 0, refresh: () => {} });
 
@@ -12,7 +12,9 @@ export function NotificationProvider({ children }) {
   const fetchCount = useCallback(async () => {
     if (!user || user.role !== 'student') { setUnreadCount(0); return; }
     try {
-      const data = await studentAPI.notes();
+      // Lightweight dedicated endpoint (just counts) instead of fetching the
+      // full notes list every poll just to read one field off it.
+      const data = await notesAPI.unreadCount();
       setUnreadCount(data.unreadCount || 0);
     } catch {
       // silent fail

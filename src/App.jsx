@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, Suspense, lazy } from 'react';
 import { Route, Routes, BrowserRouter as Router, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext.jsx';
 import ScrollToTop from '@/components/ScrollToTop.jsx';
@@ -9,40 +9,55 @@ import MobileNav from '@/components/MobileNav.jsx';
 import { Toaster } from '@/components/ui/sonner';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt.jsx';
 import { NotificationProvider } from '@/contexts/NotificationContext.jsx'; // الـ Import موجود وجاهز
+import { Spinner } from '@/components/ui/spinner';
 
 // Auth
 import LoginPage from '@/pages/LoginPage.jsx';
 
+// ── Lazy-loaded pages ──────────────────────────────────────────────────────
+// كل صفحة بتتحمّل عند زيارة الراوت بتاعها فقط، مش كلها مع أول تحميل للموقع.
+// نفس الصفحات بالظبط ونفس الشكل — بس تقسيم الكود (Code Splitting) لتقليل
+// حجم الحزمة الأولية (Bundle Size) وتسريع أول تحميل.
+
 // Teacher Pages
-import HomePage from '@/pages/HomePage.jsx'; 
-import GroupsPage from '@/pages/GroupsPage.jsx';
-import StudentsPage from '@/pages/StudentsPage.jsx';
-import AttendancePage from '@/pages/AttendancePage.jsx';
-import PaymentsPage from '@/pages/PaymentsPage.jsx';
-import ExamsPage from '@/pages/teacher/ExamsPage.jsx';
-import GradesPage from '@/pages/teacher/GradesPage.jsx';
-import RankingsPage from '@/pages/teacher/RankingsPage.jsx';
-import PointsPage from '@/pages/teacher/PointsPage.jsx';
-import ReportsPage from '@/pages/teacher/ReportsPage.jsx';
-import HeroesPage from '@/pages/teacher/HeroesPage.jsx';
-import NotesPage from '@/pages/teacher/NotesPage.jsx';
-import OnlinePage from '@/pages/teacher/OnlinePage.jsx';
-import AccountPage from '@/pages/AccountPage.jsx';
+const HomePage       = lazy(() => import('@/pages/HomePage.jsx'));
+const GroupsPage     = lazy(() => import('@/pages/GroupsPage.jsx'));
+const StudentsPage   = lazy(() => import('@/pages/StudentsPage.jsx'));
+const AttendancePage = lazy(() => import('@/pages/AttendancePage.jsx'));
+const PaymentsPage   = lazy(() => import('@/pages/PaymentsPage.jsx'));
+const ExamsPage      = lazy(() => import('@/pages/teacher/ExamsPage.jsx'));
+const GradesPage     = lazy(() => import('@/pages/teacher/GradesPage.jsx'));
+const RankingsPage   = lazy(() => import('@/pages/teacher/RankingsPage.jsx'));
+const PointsPage     = lazy(() => import('@/pages/teacher/PointsPage.jsx'));
+const ReportsPage    = lazy(() => import('@/pages/teacher/ReportsPage.jsx'));
+const HeroesPage     = lazy(() => import('@/pages/teacher/HeroesPage.jsx'));
+const NotesPage      = lazy(() => import('@/pages/teacher/NotesPage.jsx'));
+const OnlinePage     = lazy(() => import('@/pages/teacher/OnlinePage.jsx'));
+const AccountPage    = lazy(() => import('@/pages/AccountPage.jsx'));
 
 // Student Pages
-import StudentHomePage from '@/pages/student/StudentHomePage.jsx';
-import StudentSchedulePage from '@/pages/student/StudentSchedulePage.jsx';
-import StudentPaymentsPage from '@/pages/student/StudentPaymentsPage.jsx';
-import StudentExamsPage from '@/pages/student/StudentExamsPage.jsx';
-import ExamInterfacePage from '@/pages/student/ExamInterfacePage.jsx';
-import StudentGradesPage from '@/pages/student/StudentGradesPage.jsx';
-import StudentRankingsPage from '@/pages/student/StudentRankingsPage.jsx';
-import StudentAttendancePage from '@/pages/student/StudentAttendancePage.jsx';
-import StudentPointsPage from '@/pages/student/StudentPointsPage.jsx';
-import StudentHeroesPage from '@/pages/student/StudentHeroesPage.jsx';
-import StudentAccountPage from '@/pages/student/StudentAccountPage.jsx';
-import StudentNotesPage from '@/pages/student/StudentNotesPage.jsx';
-import StudentOnlinePage from '@/pages/student/StudentOnlinePage.jsx';
+const StudentHomePage       = lazy(() => import('@/pages/student/StudentHomePage.jsx'));
+const StudentSchedulePage   = lazy(() => import('@/pages/student/StudentSchedulePage.jsx'));
+const StudentPaymentsPage   = lazy(() => import('@/pages/student/StudentPaymentsPage.jsx'));
+const StudentExamsPage      = lazy(() => import('@/pages/student/StudentExamsPage.jsx'));
+const ExamInterfacePage     = lazy(() => import('@/pages/student/ExamInterfacePage.jsx'));
+const StudentGradesPage     = lazy(() => import('@/pages/student/StudentGradesPage.jsx'));
+const StudentRankingsPage   = lazy(() => import('@/pages/student/StudentRankingsPage.jsx'));
+const StudentAttendancePage = lazy(() => import('@/pages/student/StudentAttendancePage.jsx'));
+const StudentPointsPage     = lazy(() => import('@/pages/student/StudentPointsPage.jsx'));
+const StudentHeroesPage     = lazy(() => import('@/pages/student/StudentHeroesPage.jsx'));
+const StudentAccountPage    = lazy(() => import('@/pages/student/StudentAccountPage.jsx'));
+const StudentNotesPage      = lazy(() => import('@/pages/student/StudentNotesPage.jsx'));
+const StudentOnlinePage     = lazy(() => import('@/pages/student/StudentOnlinePage.jsx'));
+
+// Fallback shown briefly while a page's chunk is being fetched.
+function PageLoadingFallback() {
+  return (
+    <div className="flex items-center justify-center w-full h-full min-h-[50vh]">
+      <Spinner className="size-8 text-primary" />
+    </div>
+  );
+}
 
 function ProtectedLayout({ children }) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
@@ -76,6 +91,7 @@ function App() {
       <NotificationProvider>
         <Router>
           <ScrollToTop />
+          <Suspense fallback={<PageLoadingFallback />}>
           <Routes>
             <Route path="/" element={<RootRedirect />} />
             <Route path="/login" element={<LoginPage />} />
@@ -114,6 +130,7 @@ function App() {
             {/* FALLBACK */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+          </Suspense>
           <Toaster position="top-center" dir="rtl" />
           <PWAInstallPrompt />
         </Router>
