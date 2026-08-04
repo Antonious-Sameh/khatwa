@@ -1,33 +1,51 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
-import { Calendar } from "lucide-react";
+import { Calendar, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
+import { studentAPI } from "@/api/services";
 
-const SCHEDULE_DEMO = {
-  "first-prep": [
-    { day: "السبت", time: "4:00م - 6:00م", group: "مجموعة النخبة" },
-    { day: "الثلاثاء", time: "4:00م - 6:00م", group: "مجموعة النخبة" },
-  ],
-  "second-prep": [
-    { day: "الأحد", time: "5:00م - 7:00م", group: "مجموعة الرواد" },
-    { day: "الأربعاء", time: "5:00م - 7:00م", group: "مجموعة الرواد" },
-  ],
-  "third-prep": [
-    { day: "الاثنين", time: "4:00م - 7:00م", group: "مجموعة الأبطال" },
-    { day: "الخميس", time: "4:00م - 7:00م", group: "مجموعة الأبطال" },
-  ],
-  "first-sec": [
-    { day: "الثلاثاء", time: "6:00م - 8:00م", group: "مجموعة الصباح" },
-  ],
-  "second-sec": [
-    { day: "الجمعة", time: "10:00ص - 1:00م", group: "مجموعة الإتقان" },
-  ],
-};
+// Format a "HH:MM" (24h) time string into Arabic 12h format, e.g. "4:00م"
+function formatTime(time) {
+  if (!time) return "";
+  try {
+    const [h, m] = time.split(":");
+    const hour = Number(h);
+    const suffix = hour >= 12 ? "م" : "ص";
+    const h12 = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+    return `${h12}:${m}${suffix}`;
+  } catch {
+    return time;
+  }
+}
 
 export default function StudentSchedulePage() {
-  const { user } = useAuth();
-  const schedule = SCHEDULE_DEMO[user?.academicYear] || [];
+  const [schedule, setSchedule] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let mounted = true;
+    studentAPI
+      .me()
+      .then((data) => {
+        if (!mounted) return;
+        const group = data?.student?.group;
+        const sessions = (group?.schedule || []).map((s) => ({
+          day: s.day,
+          time: formatTime(s.time),
+          group: group?.name || "",
+        }));
+        setSchedule(sessions);
+      })
+      .catch(() => {
+        if (mounted) setSchedule([]);
+      })
+      .finally(() => {
+        if (mounted) setLoading(false);
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   return (
     <>
@@ -46,7 +64,11 @@ export default function StudentSchedulePage() {
             </p>
           </div>
         </div>
-        {schedule.length === 0 ? (
+        {loading ? (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="h-8 w-8 text-primary animate-spin" />
+          </div>
+        ) : schedule.length === 0 ? (
           <div className="text-center py-16 bg-card border rounded-2xl border-dashed">
             <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-3 opacity-40" />
             <p className="text-muted-foreground">لا يوجد جدول محدد بعد</p>
