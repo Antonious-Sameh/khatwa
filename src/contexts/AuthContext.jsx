@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { authAPI } from '@/api/services';
 import { setAccessToken, clearAccessToken } from '@/api/axios';
 import { safeLocalStorage, safeSessionStorage } from '@/lib/safe-storage';
+import { getDeviceId } from '@/lib/deviceId';
 
 const AuthContext = createContext(null);
 
@@ -137,7 +138,7 @@ export function AuthProvider({ children }) {
     const trimmed = code.trim().toUpperCase();
     if (mode !== 'demo') {
       try {
-        const data = await authAPI.login(trimmed);
+        const data = await authAPI.login(trimmed, getDeviceId());
         setAccessToken(data.accessToken);
         setUser(data.user);
         persistUser(data.user);

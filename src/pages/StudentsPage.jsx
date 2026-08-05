@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet';
 import {
   Plus, Edit, KeyRound, Users, Ban, CheckCircle2, Trash2,
   MoreVertical, GraduationCap, Loader2, AlertCircle, X, Save,
-  Search, Copy, Check, ShieldCheck
+  Search, Copy, Check, ShieldCheck, Smartphone
 } from 'lucide-react';
 import { Button }   from '@/components/ui/button';
 import { Input }    from '@/components/ui/input';
@@ -369,6 +369,15 @@ export default function StudentsPage() {
     }
   };
 
+  const handleResetDevice = async (student) => {
+    try {
+      await studentsAPI.resetDevice(student._id);
+      toast.success('تم إعادة تعيين الجهاز — يمكن للطالب الدخول من جهاز جديد الآن');
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'فشلت العملية');
+    }
+  };
+
   // Filter + group
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -514,6 +523,9 @@ export default function StudentsPage() {
                                           </DropdownMenuItem>
                                           <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setResetting(student)}>
                                             <KeyRound className="h-4 w-4" /> تغيير الكود
+                                          </DropdownMenuItem>
+                                          <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleResetDevice(student)}>
+                                            <Smartphone className="h-4 w-4" /> إعادة تعيين الجهاز
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
