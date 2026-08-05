@@ -32,6 +32,8 @@ export const studentsAPI = {
   toggleStatus: (id)          => api.patch(`/students/${id}/toggle-status`).then(getData),
   resetCode:    (id)          => api.post(`/students/${id}/reset-code`).then(getData),
   resetDevice:  (id)          => api.post(`/students/${id}/reset-device`).then(getData),
+  getDevices:   (id)          => api.get(`/students/${id}/devices`).then(getData),
+  removeDevice: (id, deviceId) => api.delete(`/students/${id}/devices/${deviceId}`).then(getData),
 };
 
 // ══════════════════════════════════════════════════════════════════════════════

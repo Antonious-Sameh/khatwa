@@ -285,6 +285,133 @@ function ResetCodeModal({ student, onClose }) {
   );
 }
 
+// ── Manage Devices Modal (max 2 devices per student) ───────────────────────────
+function DeviceManagerModal({ student, onClose }) {
+  const [devices,  setDevices]  = useState(null); // null = loading
+  const [error,    setError]    = useState(null);
+  const [busyId,   setBusyId]   = useState(null); // deviceId currently being removed
+  const [resetting, setResetting] = useState(false);
+
+  const loadDevices = async () => {
+    setError(null);
+    try {
+      const data = await studentsAPI.getDevices(student._id);
+      setDevices(data.devices || []);
+    } catch (err) {
+      setError(err?.response?.data?.message || 'فشل تحميل بيانات الأجهزة');
+    }
+  };
+
+  useEffect(() => { loadDevices(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleRemove = async (deviceId) => {
+    setBusyId(deviceId);
+    try {
+      await studentsAPI.removeDevice(student._id, deviceId);
+      toast.success('تم حذف الجهاز — يمكن لجهاز جديد الدخول مكانه');
+      await loadDevices();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'فشل حذف الجهاز');
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  const handleResetAll = async () => {
+    setResetting(true);
+    try {
+      await studentsAPI.resetDevice(student._id);
+      toast.success('تم إعادة تعيين جميع الأجهزة');
+      await loadDevices();
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'فشلت العملية');
+    } finally {
+      setResetting(false);
+    }
+  };
+
+  const formatDate = (d) => {
+    if (!d) return null;
+    try { return new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' }); }
+    catch { return null; }
+  };
+
+  const SLOT_LABELS = ['الجهاز الأول', 'الجهاز الثاني'];
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={onClose}>
+      <div className="bg-card border rounded-2xl shadow-2xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between">
+          <h3 className="font-bold text-lg flex items-center gap-2">
+            <Smartphone className="h-5 w-5 text-primary" /> إدارة أجهزة الطالب
+          </h3>
+          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          الطالب <strong>{student.name}</strong> — يسمح بحد أقصى جهازين لتسجيل الدخول.
+        </p>
+
+        {devices === null && !error && (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        )}
+
+        {error && (
+          <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        {devices !== null && !error && (
+          <div className="space-y-3">
+            {devices.length === 0 && (
+              <div className="text-center py-6 text-sm text-muted-foreground border rounded-xl border-dashed">
+                لا يوجد أجهزة مرتبطة بهذا الحساب حالياً
+              </div>
+            )}
+            {devices.map((d, idx) => (
+              <div key={d.id} className="flex items-center justify-between gap-3 p-3 border rounded-xl bg-muted/20">
+                <div className="min-w-0">
+                  <p className="font-bold text-sm">{SLOT_LABELS[idx] || `جهاز ${idx + 1}`}</p>
+                  <p className="text-xs text-muted-foreground truncate">{d.label || 'جهاز غير معروف النوع'}</p>
+                  {formatDate(d.addedAt) && (
+                    <p className="text-[11px] text-muted-foreground mt-0.5">أول دخول: {formatDate(d.addedAt)}</p>
+                  )}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-destructive hover:text-destructive shrink-0"
+                  disabled={busyId === d.id}
+                  onClick={() => handleRemove(d.id)}
+                >
+                  {busyId === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  حذف
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-3 pt-2 border-t">
+          <Button variant="outline" className="flex-1" onClick={onClose}>إغلاق</Button>
+          <Button
+            variant="destructive"
+            className="flex-1 gap-2"
+            onClick={handleResetAll}
+            disabled={resetting || devices === null || devices.length === 0}
+          >
+            {resetting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Smartphone className="h-4 w-4" />}
+            إعادة تعيين الكل
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Confirm Delete ────────────────────────────────────────────────────────────
 function ConfirmDelete({ student, onClose, onDeleted }) {
   const [loading, setLoading] = useState(false);
@@ -327,6 +454,7 @@ export default function StudentsPage() {
   const [modal,     setModal]     = useState(null); // null | 'add' | { student }
   const [resetting, setResetting] = useState(null);
   const [deleting,  setDeleting]  = useState(null);
+  const [managingDevices, setManagingDevices] = useState(null); // student whose devices are being managed
   const [newCodeInfo, setNewCodeInfo] = useState(null); // { code, name }
 
   const load = async () => {
@@ -364,15 +492,6 @@ export default function StudentsPage() {
       await studentsAPI.toggleStatus(student._id);
       toast.success(student.isActive ? 'تم تعليق الحساب' : 'تم تفعيل الحساب');
       load();
-    } catch (err) {
-      toast.error(err?.response?.data?.message || 'فشلت العملية');
-    }
-  };
-
-  const handleResetDevice = async (student) => {
-    try {
-      await studentsAPI.resetDevice(student._id);
-      toast.success('تم إعادة تعيين الجهاز — يمكن للطالب الدخول من جهاز جديد الآن');
     } catch (err) {
       toast.error(err?.response?.data?.message || 'فشلت العملية');
     }
@@ -524,8 +643,8 @@ export default function StudentsPage() {
                                           <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setResetting(student)}>
                                             <KeyRound className="h-4 w-4" /> تغيير الكود
                                           </DropdownMenuItem>
-                                          <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => handleResetDevice(student)}>
-                                            <Smartphone className="h-4 w-4" /> إعادة تعيين الجهاز
+                                          <DropdownMenuItem className="gap-2 cursor-pointer" onClick={() => setManagingDevices(student)}>
+                                            <Smartphone className="h-4 w-4" /> إدارة الأجهزة
                                           </DropdownMenuItem>
                                           <DropdownMenuSeparator />
                                           <DropdownMenuItem
@@ -573,6 +692,7 @@ export default function StudentsPage() {
         />
       )}
       {resetting && <ResetCodeModal student={resetting} onClose={() => { setResetting(null); load(); }} />}
+      {managingDevices && <DeviceManagerModal student={managingDevices} onClose={() => setManagingDevices(null)} />}
       {deleting  && <ConfirmDelete  student={deleting}  onClose={() => setDeleting(null)} onDeleted={() => { setDeleting(null); load(); }} />}
       {newCodeInfo && (
         <NewStudentCodeModal
