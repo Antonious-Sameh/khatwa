@@ -224,6 +224,14 @@ function ExamInterface({ exam, onSubmitted, onClose }) {
                   }`}>{idx+1}</span>
                   <div className="flex-1">
                     <p className="font-semibold leading-relaxed">{q.text}</p>
+                    {q.imageUrl && (
+                      <img
+                        src={q.imageUrl}
+                        alt="صورة السؤال"
+                        loading="lazy"
+                        className="mt-2 max-h-56 rounded-lg border bg-white object-contain"
+                      />
+                    )}
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {q.type === 'truefalse' ? 'صح / خطأ' : 'اختيار من متعدد'}
                       {' · '}{q.points} {q.points === 1 ? 'درجة' : 'درجات'}
