@@ -472,10 +472,78 @@ function FileSection({ label, url, type, endpoint, onUpdated }) {
   );
 }
 
+// ── Submission Detail Modal — teacher view of one student's full attempt ─────
+function SubmissionDetailModal({ examId, studentId, studentName, onClose }) {
+  const [data, setData]       = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    api.get(`/exams/${examId}/results/${studentId}`)
+      .then(r => setData(r.data.data))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [examId, studentId]);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/60 p-4 overflow-y-auto" onClick={onClose}>
+      <div className="bg-card border rounded-2xl shadow-2xl w-full max-w-2xl my-4" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-5 border-b sticky top-0 bg-card rounded-t-2xl z-10">
+          <h3 className="font-bold text-lg">محاولة {studentName || 'الطالب'}</h3>
+          <Button size="sm" variant="ghost" onClick={onClose}>✕</Button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {loading ? (
+            <div className="flex justify-center py-6"><Loader2 className="h-5 w-5 animate-spin text-primary"/></div>
+          ) : !data ? (
+            <p className="text-center text-muted-foreground text-sm py-4">فشل تحميل المحاولة</p>
+          ) : (
+            <>
+              <div className="text-center text-sm text-muted-foreground pb-3 border-b">
+                الدرجة: <span className="font-bold text-foreground">{data.submission.score}</span> / {data.exam.maxScore}
+                {' '}({data.submission.percentage}%)
+              </div>
+
+              {(data.exam.questions || []).map((q, idx) => {
+                const ans    = data.submission.answers?.find(a => a.questionId?.toString() === q._id?.toString());
+                const chosen = ans?.chosenAnswer ?? null;
+                return (
+                  <div key={q._id} className={`rounded-xl border-2 p-4 space-y-2 ${ans?.isCorrect ? 'border-green-200 bg-green-50/30' : 'border-red-200 bg-red-50/30'}`}>
+                    <p className="font-semibold text-sm">{idx+1}. {q.text}</p>
+                    {q.imageUrl && (
+                      <img src={q.imageUrl} alt="صورة السؤال" loading="lazy" className="max-h-40 rounded-lg border bg-white object-contain"/>
+                    )}
+                    <div className="space-y-1">
+                      {(q.options || []).map((opt, oIdx) => (
+                        <div key={oIdx} className={`text-xs px-3 py-1.5 rounded-lg border ${
+                          oIdx === q.correctAnswer ? 'border-green-400 bg-green-100 font-bold' :
+                          oIdx === chosen           ? 'border-red-400 bg-red-100' :
+                          'border-border'
+                        }`}>
+                          {String.fromCharCode(65 + oIdx)}. {opt}
+                          {oIdx === q.correctAnswer && <span className="text-green-700 mr-1">(الإجابة الصحيحة)</span>}
+                          {oIdx === chosen && oIdx !== q.correctAnswer && <span className="text-red-600 mr-1">(اختيار الطالب)</span>}
+                        </div>
+                      ))}
+                      {chosen === null && <p className="text-xs text-orange-600">لم يُجب الطالب على هذا السؤال</p>}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{ans?.pointsEarned ?? 0} / {q.points || 1} درجة</p>
+                  </div>
+                );
+              })}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Results Panel ─────────────────────────────────────────────────────────────
 function ResultsPanel({ examId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [viewingSubmission, setViewingSubmission] = useState(null); // { studentId, studentName }
   useEffect(() => {
     api.get(`/exams/${examId}/results`).then(r=>setData(r.data.data)).catch(()=>{}).finally(()=>setLoading(false));
   }, [examId]);
@@ -496,7 +564,7 @@ function ResultsPanel({ examId }) {
             </thead>
             <tbody className="divide-y">
               {data.submissions.map((s,i)=>(
-                <tr key={s._id} className="hover:bg-muted/20">
+                <tr key={s._id} className="hover:bg-muted/20 cursor-pointer" onClick={() => setViewingSubmission({ studentId: s.student?._id, studentName: s.student?.name })}>
                   <td className="px-4 py-2.5 text-muted-foreground">{i+1}</td>
                   <td className="px-4 py-2.5 font-bold">{s.student?.name}</td>
                   <td className="px-4 py-2.5 font-bold">{s.score}/{data.exam.maxScore}</td>
@@ -506,6 +574,15 @@ function ResultsPanel({ examId }) {
             </tbody>
           </table>
         </div>
+      )}
+
+      {viewingSubmission && (
+        <SubmissionDetailModal
+          examId={examId}
+          studentId={viewingSubmission.studentId}
+          studentName={viewingSubmission.studentName}
+          onClose={() => setViewingSubmission(null)}
+        />
       )}
     </div>
   );
