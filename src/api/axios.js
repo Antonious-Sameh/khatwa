@@ -51,12 +51,17 @@ api.interceptors.response.use(
     // 4. The failing request IS the login endpoint (wrong code — don't refresh)
     const isRefreshCall = orig?.url?.includes('/auth/refresh');
     const isLoginCall   = orig?.url?.includes('/auth/login');
+    // Passkey endpoints are either public (login) or already-authenticated
+    // (register) — a 401 from them means "wrong/expired passkey attempt" or
+    // "not logged in yet", never "access token needs a refresh".
+    const isPasskeyCall = orig?.url?.includes('/auth/passkey/');
 
     if (
       err.response?.status !== 401 ||
       orig._retry ||
       isRefreshCall ||
-      isLoginCall
+      isLoginCall ||
+      isPasskeyCall
     ) {
       return Promise.reject(err);
     }

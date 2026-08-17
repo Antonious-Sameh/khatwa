@@ -1,22 +1,58 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Helmet } from 'react-helmet';
-import { KeyRound, ArrowLeft, Eye, EyeOff, Phone, MessageCircle } from 'lucide-react';
+import { KeyRound, ArrowLeft, Eye, EyeOff, Phone, MessageCircle, Fingerprint } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import { isPasskeySupported } from '@/lib/passkey';
 
 export default function LoginPage() {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [showCode, setShowCode] = useState(false);
-  
-  const { login } = useAuth();
+  const [passkeyLoading, setPasskeyLoading] = useState(false);
+
+  // Only offer the passkey button when this browser/device actually supports
+  // WebAuthn — otherwise normal login stays the only (unaffected) option.
+  const [passkeyAvailable] = useState(() => isPasskeySupported());
+
+  const { login, loginWithPasskey, mode } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const goAfterLogin = (user) => {
+    const from = location.state?.from?.pathname;
+    if (from && from !== '/') {
+      navigate(from, { replace: true });
+    } else {
+      navigate(user.role === 'teacher' ? '/teacher/home' : '/student/home', { replace: true });
+    }
+  };
+
+  const handlePasskeyLogin = async () => {
+    setPasskeyLoading(true);
+    try {
+      const result = await loginWithPasskey();
+      if (result.ok) {
+        toast.success(`مرحباً بك ${result.data.user.name}`);
+        goAfterLogin(result.data.user);
+        return;
+      }
+      if (result.reason === 'cancelled') {
+        // User dismissed the fingerprint/Face ID prompt — no error needed.
+        return;
+      }
+      if (result.reason !== 'unsupported') {
+        toast.error(result.error?.response?.data?.message || 'تعذر تسجيل الدخول بالبصمة، جرّب الكود العادي');
+      }
+    } finally {
+      setPasskeyLoading(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e?.preventDefault();
@@ -30,12 +66,7 @@ export default function LoginPage() {
     try {
       const user = await login(trimmed);
       toast.success(`مرحباً بك ${user.name}`);
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/') {
-        navigate(from, { replace: true });
-      } else {
-        navigate(user.role === 'teacher' ? '/teacher/home' : '/student/home', { replace: true });
-      }
+      goAfterLogin(user);
     } catch (err) {
       toast.error(err?.response?.data?.message || 'كود الدخول غير صحيح، يرجى المحاولة مرة أخرى');
     } finally {
@@ -162,6 +193,36 @@ export default function LoginPage() {
                       </>
                     )}
                   </Button>
+
+                  {passkeyAvailable && mode !== 'demo' && (
+                    <>
+                      <div className="relative flex items-center py-1">
+                        <div className="flex-1 border-t border-slate-200" />
+                        <span className="px-3 text-[11px] text-slate-400">أو</span>
+                        <div className="flex-1 border-t border-slate-200" />
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handlePasskeyLogin}
+                        disabled={passkeyLoading || loading}
+                        className="w-full h-12 text-sm font-medium border-slate-200 text-slate-700 hover:bg-slate-50 rounded-xl flex items-center justify-center gap-2"
+                      >
+                        {passkeyLoading ? (
+                          <span className="flex items-center gap-2" role="status" aria-live="polite">
+                            <span className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin" />
+                            <span>جارٍ التحقق من البصمة...</span>
+                          </span>
+                        ) : (
+                          <>
+                            <Fingerprint className="h-4 w-4" />
+                            <span>الدخول بالبصمة</span>
+                          </>
+                        )}
+                      </Button>
+                    </>
+                  )}
                 </form>
               </CardContent>
             </Card>

@@ -19,6 +19,18 @@ export const authAPI = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════════
+// PASSKEY / WebAuthn — optional fingerprint / Face ID / Windows Hello login
+// ══════════════════════════════════════════════════════════════════════════════
+export const passkeyAPI = {
+  registerOptions: (deviceId) => api.post('/auth/passkey/register/options', { deviceId }).then(getData),
+  registerVerify:  (response) => api.post('/auth/passkey/register/verify', { response }).then(getData),
+  loginOptions:    ()                  => api.post('/auth/passkey/login/options').then(getData),
+  loginVerify:     (response)          => api.post('/auth/passkey/login/verify', { response }).then(getData),
+  status:          (deviceId)          => api.get('/auth/passkey/status', { params: { deviceId } }).then(getData),
+  remove:          (deviceId)          => api.delete('/auth/passkey', { data: { deviceId } }).then(getData),
+};
+
+// ══════════════════════════════════════════════════════════════════════════════
 // STUDENTS (teacher)
 // ══════════════════════════════════════════════════════════════════════════════
 export const studentsAPI = {

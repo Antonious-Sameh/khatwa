@@ -3,6 +3,7 @@ import { authAPI } from '@/api/services';
 import { setAccessToken, clearAccessToken } from '@/api/axios';
 import { safeLocalStorage, safeSessionStorage } from '@/lib/safe-storage';
 import { getDeviceId } from '@/lib/deviceId';
+import { loginWithPasskey as passkeyLogin } from '@/lib/passkey';
 
 const AuthContext = createContext(null);
 
@@ -133,18 +134,26 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('auth:expired', handle);
   }, [persistUser]);
 
+  // ── Shared session bootstrap — used by both normal login and passkey login
+  // so a passkey sign-in ends up in EXACTLY the same authenticated state as
+  // a normal code login (same token storage, same cached user, same
+  // refresh scheduling). No parallel session system.
+  const applySession = useCallback((data) => {
+    setAccessToken(data.accessToken);
+    setUser(data.user);
+    persistUser(data.user);
+    setMode('backend');
+    scheduleRefresh();
+    return data.user;
+  }, [scheduleRefresh, persistUser]);
+
   // ── Login ─────────────────────────────────────────────────────────────────
   const login = useCallback(async (code) => {
     const trimmed = code.trim().toUpperCase();
     if (mode !== 'demo') {
       try {
         const data = await authAPI.login(trimmed, getDeviceId());
-        setAccessToken(data.accessToken);
-        setUser(data.user);
-        persistUser(data.user);
-        setMode('backend');
-        scheduleRefresh();
-        return data.user;
+        return applySession(data);
       } catch (err) {
         if (!isNetworkError(err)) throw err;
         // Backend unreachable → fall through to demo mode
@@ -160,7 +169,18 @@ export function AuthProvider({ children }) {
     safeSessionStorage.setItem(DEMO_KEY, JSON.stringify(demoUser));
     setUser(demoUser);
     return demoUser;
-  }, [mode, scheduleRefresh, persistUser]);
+  }, [mode, applySession]);
+
+  // ── Login with a passkey (fingerprint / Face ID / Windows Hello) ──────────
+  // Optional, additive alternative to `login`. Demo mode has no passkeys to
+  // check against, so this simply isn't offered when the backend is
+  // unreachable (the UI only shows the button once `mode === 'backend'`).
+  const loginWithPasskey = useCallback(async () => {
+    const result = await passkeyLogin();
+    if (!result.ok) return result;
+    applySession(result.data);
+    return result;
+  }, [applySession]);
 
   // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(async () => {
@@ -185,7 +205,7 @@ export function AuthProvider({ children }) {
   }, [persistUser]);
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading, isAuthenticated: !!user, mode, updateUser }}>
+    <AuthContext.Provider value={{ user, login, loginWithPasskey, logout, loading, isAuthenticated: !!user, mode, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

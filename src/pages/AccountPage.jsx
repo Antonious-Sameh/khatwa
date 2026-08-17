@@ -12,6 +12,7 @@ import { Badge }  from '@/components/ui/badge';
 import { accountAPI } from '@/api/services';
 import { useAuth } from '@/contexts/AuthContext.jsx';
 import { toast } from 'sonner';
+import PasskeySection from '@/components/PasskeySection.jsx';
 
 function Avatar({ user, onUpload, onRemove, uploading }) {
   const fileRef = useRef(null);
@@ -271,6 +272,13 @@ export default function AccountPage() {
                 {savingCode ? 'جاري التغيير...' : 'تغيير الكود'}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Passkey login (optional, additional to the code login above) */}
+        <Card className="border shadow-sm">
+          <CardContent className="p-4">
+            <PasskeySection />
           </CardContent>
         </Card>
 
