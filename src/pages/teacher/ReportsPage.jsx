@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import { Search, User, Activity, CreditCard, Award, Trophy, Star, BarChart2, Loader2 } from 'lucide-react';
+import { Search, User, Activity, CreditCard, Award, Trophy, Star, BarChart2, Loader2, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input }  from '@/components/ui/input';
 import { Badge }  from '@/components/ui/badge';
@@ -14,6 +14,35 @@ function Stat({ label, value, color = '' }) {
       <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
     </div>
   );
+}
+
+// نفس مقاييس الألوان المستخدمة بالفعل في صفحة درجات الطالب (StudentGradesPage)
+// حتى يبقى شكل مستوى الطالب متناسق في كل المنصة
+function getLevelInfo(pct) {
+  if (pct >= 85) return { label: 'ممتاز',   text: 'text-green-600',  bar: 'bg-green-500'  };
+  if (pct >= 70) return { label: 'جيد جداً', text: 'text-blue-600',   bar: 'bg-blue-500'   };
+  if (pct >= 50) return { label: 'متوسط',   text: 'text-yellow-600', bar: 'bg-yellow-500' };
+  return             { label: 'ضعيف',    text: 'text-red-500',   bar: 'bg-red-400'    };
+}
+
+// يقارن متوسط أحدث الدرجات بمتوسط الأقدم لمعرفة هل الطالب في تحسن أو تراجع أو ثابت
+// (القائمة مرتبة من الأحدث للأقدم بالفعل من الـ backend — createdAt: -1)
+function getGradesTrend(list = []) {
+  const graded = list.filter(g => (g.maxScoreResolved ?? g.exam?.maxScore ?? g.maxScore ?? 0) > 0);
+  if (graded.length < 2) return null;
+
+  const half   = Math.max(1, Math.floor(graded.length / 2));
+  const recent = graded.slice(0, half);
+  const older  = graded.slice(half);
+  const avg    = (arr) => arr.reduce((s, g) => s + (g.percentage || 0), 0) / arr.length;
+
+  const recentAvg = avg(recent);
+  const olderAvg  = avg(older);
+  const diff      = Math.round(recentAvg - olderAvg);
+
+  if (diff >= 5)  return { direction: 'up',   label: 'في تحسن',  diff, icon: TrendingUp,   color: 'text-green-600', bg: 'bg-green-50 border-green-200' };
+  if (diff <= -5) return { direction: 'down', label: 'في تراجع', diff, icon: TrendingDown, color: 'text-red-600',   bg: 'bg-red-50 border-red-200'     };
+  return               { direction: 'stable', label: 'مستقر',    diff, icon: Minus,        color: 'text-muted-foreground', bg: 'bg-muted/30 border-border' };
 }
 
 export default function ReportsPage() {
@@ -165,21 +194,92 @@ export default function ReportsPage() {
               </CardContent>
             </Card>
 
-            {/*  < Grades 
-            {report.grades?.list?.length > 0 && (
-              <Card>
-                <CardHeader className="pb-3"><CardTitle className="text-base flex gap-2"><Award className="h-5 w-5 text-primary" />الدرجات</CardTitle></CardHeader>
-                <CardContent className="pt-0 space-y-2">
-                  {report.grades.list.map(g => (
-                    <div key={g._id} className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-3">
-                      <span className="font-medium text-sm">{g.exam?.title}</span>
-                      <span className="font-black text-lg text-primary">{g.score} <span className="text-xs text-muted-foreground font-normal">/ {g.exam?.maxScore}</span></span>
+            {/* Grades / Exams */}
+            {report.grades?.list?.length > 0 && (() => {
+              const overallPct = report.grades.percentage || 0;
+              const level      = getLevelInfo(overallPct);
+              const trend      = getGradesTrend(report.grades.list);
+              const TrendIcon  = trend?.icon;
+
+              return (
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base flex gap-2"><Award className="h-5 w-5 text-primary" />الامتحانات والدرجات</CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0 space-y-4">
+                    {/* Summary */}
+                    <div className="flex gap-8 flex-wrap">
+                      <Stat label="عدد الامتحانات" value={report.grades.examCount || 0} />
+                      <Stat label="إجمالي الدرجات" value={`${report.grades.totalScore || 0} / ${report.grades.totalMax || 0}`} />
+                      <Stat label="النسبة الكلية" value={`${overallPct}%`} color={level.text} />
                     </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-            */}
+
+                    {/* Level / progress indicator */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <span className="text-sm font-bold flex items-center gap-1.5">
+                          مستوى الطالب: <span className={level.text}>{level.label}</span>
+                        </span>
+                        <span className={`text-sm font-black ${level.text}`}>{overallPct}%</span>
+                      </div>
+                      <div className="h-2.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className={`h-2.5 rounded-full ${level.bar} transition-all`}
+                          style={{ width: `${Math.min(100, Math.max(0, overallPct))}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Trend indicator: improving / declining / stable */}
+                    {trend && (
+                      <div className={`flex items-center gap-2 border rounded-xl px-4 py-2.5 ${trend.bg}`}>
+                        <TrendIcon className={`h-4 w-4 shrink-0 ${trend.color}`} />
+                        <span className={`text-sm font-bold ${trend.color}`}>{trend.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          مقارنة بين أحدث الامتحانات وأقدمها
+                          {trend.diff !== 0 && ` (${trend.diff > 0 ? '+' : ''}${trend.diff}%)`}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Exams list */}
+                    <div className="space-y-2">
+                      {report.grades.list.map(g => {
+                        const title  = g.examTitleResolved ?? g.exam?.title ?? g.examTitle ?? 'امتحان';
+                        const max    = g.maxScoreResolved   ?? g.exam?.maxScore ?? g.maxScore ?? 0;
+                        const date   = g.examDateResolved   ?? g.exam?.examDate ?? g.createdAt;
+                        const pct    = g.percentage ?? (max > 0 ? Math.round((g.score / max) * 100) : null);
+                        const gLevel = pct !== null ? getLevelInfo(pct) : null;
+
+                        return (
+                          <div key={g._id} className="flex items-center justify-between bg-muted/30 rounded-lg px-4 py-3 gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium text-sm truncate">{title}</p>
+                              {date && (
+                                <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <Calendar className="h-3 w-3" />
+                                  {new Date(date).toLocaleDateString('ar-EG')}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-3 shrink-0">
+                              <span className="font-black text-lg text-primary">
+                                {g.score} <span className="text-xs text-muted-foreground font-normal">/ {max || '—'}</span>
+                              </span>
+                              {pct !== null && (
+                                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${gLevel.text} bg-background border`}>
+                                  {pct}%
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })()}
           </div>
         )}
       </div>

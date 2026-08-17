@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Helmet } from 'react-helmet';
 import {
   Star, Plus, Minus, Loader2, Search, X, Save, Trophy,
-  ChevronUp, ChevronDown, Users
+  ChevronUp, ChevronDown, Users, ArrowDownAZ
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,6 +100,7 @@ export default function PointsPage() {
   const [loading,  setLoading]  = useState(false);
   const [search,   setSearch]   = useState('');
   const [active,   setActive]   = useState(null); // studentId with open popover
+  const [sortMode, setSortMode] = useState('points'); // 'points' | 'alpha' — طريقة عرض فقط، لا تغيّر التخزين
 
   // Load groups when year changes
   useEffect(() => {
@@ -184,13 +185,18 @@ export default function PointsPage() {
       ...s,
       balance: balances[s._id?.toString()] ?? 0,
     }));
-    // Sort: highest balance first
-    withBalance.sort((a, b) => b.balance - a.balance);
+    // طريقة العرض فقط — لا تؤثر على كيفية حساب أو تخزين النقاط
+    if (sortMode === 'alpha') {
+      withBalance.sort((a, b) => (a.name || '').localeCompare(b.name || '', 'ar'));
+    } else {
+      // الوضع الافتراضي: مرتب من الأعلى نقاطاً إلى الأقل (كما كان)
+      withBalance.sort((a, b) => b.balance - a.balance);
+    }
     if (!q) return withBalance;
     return withBalance.filter(s =>
       norm(s.name).includes(q) || (s.codePlain || '').includes(search.trim())
     );
-  }, [students, balances, search]);
+  }, [students, balances, search, sortMode]);
 
   const totalPoints = useMemo(
     () => Object.values(balances).reduce((s, b) => s + (b > 0 ? b : 0), 0),
@@ -244,19 +250,31 @@ export default function PointsPage() {
         </div>
 
         {group && students.length > 0 && (
-          <div className="relative">
-            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
-            <Input
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="ابحث بالاسم أو الكود..."
-              className="h-11 pr-9 pl-8"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="h-4 w-4"/>
-              </button>
-            )}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none"/>
+              <Input
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="ابحث بالاسم أو الكود..."
+                className="h-11 pr-9 pl-8"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                  <X className="h-4 w-4"/>
+                </button>
+              )}
+            </div>
+
+            <Select value={sortMode} onValueChange={setSortMode}>
+              <SelectTrigger className="h-11 sm:w-56">
+                <SelectValue placeholder="طريقة الترتيب"/>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="points">الأعلى نقاطاً أولاً</SelectItem>
+                <SelectItem value="alpha">ترتيب أبجدي</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         )}
 
@@ -281,8 +299,12 @@ export default function PointsPage() {
         {!loading && filtered.length > 0 && (
           <Card className="border shadow-sm overflow-hidden">
             <div className="px-4 py-3 bg-muted/30 border-b flex items-center gap-2">
-              <ChevronDown className="h-4 w-4 text-muted-foreground"/>
-              <span className="text-sm font-semibold text-muted-foreground">مرتب من الأعلى نقاطاً إلى الأقل</span>
+              {sortMode === 'alpha'
+                ? <ArrowDownAZ className="h-4 w-4 text-muted-foreground"/>
+                : <ChevronDown className="h-4 w-4 text-muted-foreground"/>}
+              <span className="text-sm font-semibold text-muted-foreground">
+                {sortMode === 'alpha' ? 'ترتيب أبجدي' : 'مرتب من الأعلى نقاطاً إلى الأقل'}
+              </span>
               <Badge variant="secondary" className="mr-auto">{filtered.length} طالب</Badge>
             </div>
             <div className="overflow-x-auto">
@@ -299,14 +321,15 @@ export default function PointsPage() {
                 <tbody className="divide-y">
                   {filtered.map((s, idx) => {
                     const bal   = s.balance;
-                    const isTop = idx < 3 && bal > 0;
+                    // ميداليات الترتيب منطقية فقط عند الترتيب حسب النقاط
+                    const isTop = sortMode === 'points' && idx < 3 && bal > 0;
                     const sid   = s._id?.toString();
 
                     return (
                       <tr key={sid} className={`hover:bg-muted/20 transition-colors ${
-                        idx===0&&bal>0 ? 'bg-yellow-50/40' :
-                        idx===1&&bal>0 ? 'bg-slate-50/30'  :
-                        idx===2&&bal>0 ? 'bg-orange-50/30'  : ''
+                        isTop && idx===0 ? 'bg-yellow-50/40' :
+                        isTop && idx===1 ? 'bg-slate-50/30'  :
+                        isTop && idx===2 ? 'bg-orange-50/30'  : ''
                       }`}>
                         {/* Rank */}
                         <td className="px-4 py-3 text-center">
